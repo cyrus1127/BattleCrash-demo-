@@ -1,0 +1,4 @@
+Number,Name,CoolDownTime,Level,BuffType,Value
+00001,Small Punch,10,1,HeathPoint,-3
+00002,Small Shield,10,1,Weight,10
+00003,Urgent Aid,10,1,HeathPoint,3

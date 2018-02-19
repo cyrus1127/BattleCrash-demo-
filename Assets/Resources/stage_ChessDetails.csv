@@ -1,0 +1,4 @@
+Number,Name,Model_Name,Type,Rank,HeathPoint,Attack,Weight,Skill
+0001,Testing_001,Testing_Model,Attack,E,10,11,10,00001
+0002,Testing_002,Testing_Model,Defence,E,11,9,11,00002
+0003,Testing_003,Testing_Model,Support,E,10,10,10,00003
