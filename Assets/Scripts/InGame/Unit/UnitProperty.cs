@@ -7,6 +7,7 @@ public class UnitProperty : MonoBehaviour {
 	public float power_init;
 	public float attack_radius = 5F;
 	public float heathPoint_Init;
+	public float AIWarningHeathPercentage = 30; //For AI
 	public float coolDownTime_normalAttack = 0.2F;
 	public UnitState state_init;
 	public UnitType type_init;
@@ -22,6 +23,7 @@ public class UnitProperty : MonoBehaviour {
 	GameBoard delegate_board;
 
 	bool onMove_AI;
+	public bool debug_onMove_AI = false;
 
 	public enum UnitState
 	{
@@ -68,14 +70,32 @@ public class UnitProperty : MonoBehaviour {
 	{
 		if(type_init == UnitType.AI || type_init == UnitType.PlayerSupport)
 		{
-			GetComponent<AngleProvidor>().AIAction();
+			if(!onMove_AI){ //if(!onMove_AI && debug_onMove_AI){
+				bool isTimeToAttack = false;
+				if( getIsReadyToAttack() )
+				{
+					isTimeToAttack = true;
+					if(AIWarningHeathPercentage > 0 && heathPoint <= (heathPoint_Init * AIWarningHeathPercentage)/100 )
+					{
+						if(Random.Range(0,10) > 8)
+						{
+							isTimeToAttack = true;
+						}else{
+							isTimeToAttack = false;
+						}
+					}
+				}
+					
+				GetComponent<AngleProvidor>().AIAction(isTimeToAttack);	
+				debug_onMove_AI = false;
+			}
 		}
 	}
 
 	public void AIActionMoveTo( Vector3 n_point )
 	{
 		KnockBackHelper comp_kb = GetComponent<KnockBackHelper>();
-		if(comp_kb != null && !onMove_AI){
+		if(comp_kb != null){
 			comp_kb.doMoveToPosition(n_point);
 			Debug.Log("Do move to " + n_point);
 		}

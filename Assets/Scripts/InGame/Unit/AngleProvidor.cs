@@ -5,16 +5,25 @@ using UnityEngine;
 
 public class Angle
 {
-	public Transform myTransfrom;
+	public GameObject myObject;
+	Transform myTransfrom;
 	public enum TendDirection { undefine , up , down, left , right , upleft, upright , downleft , downright};
 
-	TendDirection direction = TendDirection.undefine;
-
-	float angleInTan = 0F;
+	TendDirection directionRefact = TendDirection.undefine;
 	TendDirection directionTended = TendDirection.undefine;
+	float angleInTan = 0F;
+	float angle_base = 0F;
+	float angle_refact = 0F;
 
 	public TendDirection getCurrentDirection(){ return directionTended;}
+	public TendDirection getCurrentRefactDirection(){ return directionRefact;}
+
 	public float getCurrentAngle(){ return angleInTan;}
+
+	public void setTarget( Vector3 p_target )
+	{
+		DoCalculate(p_target);
+	}
 
 	public float GetAngleBaseMyPositionWithObject( Transform b_target , bool do_refact)
 	{
@@ -23,9 +32,15 @@ public class Angle
 
 	public float GetAngleBaseMyPositionWithObject( Vector3 oB , bool do_refact)
 	{
-		float angle_base = 0F;
-		if( myTransfrom != null )
+		setTarget(oB);
+		return do_refact? angle_refact : angle_base;
+	}
+
+	void DoCalculate(Vector3 oB){
+		if( myObject != null )
 		{
+			myTransfrom = myObject.transform;
+			angle_base = 0F;
 			Vector3 oA = myTransfrom.position;
 
 			angleInTan = 0F;
@@ -39,51 +54,119 @@ public class Angle
 				{
 					angleInTan = (Mathf.Atan(opp/adj)* Mathf.Rad2Deg);	
 				}
-
 				if(oA.z != oB.z || oA.x != oB.x)
 				{
 					if(opp < 0.1 || adj < 0.1){
 						if(adj < 0.1){
 							if(oA.z < oB.z){
-								angle_base = do_refact ? 180F : 0F ;
-								directionTended = do_refact ? TendDirection.down : TendDirection.up ;
+								angle_base = 0F ;
+								angle_refact = 180F;
+								directionTended = TendDirection.up ;
+								directionRefact = TendDirection.down;
 							}else if(oA.z > oB.z){
-								angle_base = do_refact ? 0F : 180F ;
-								directionTended = do_refact ? TendDirection.up : TendDirection.down ;
+								angle_base = 180F ;
+								angle_refact = 0F;
+								directionTended = TendDirection.down ;
+								directionRefact = TendDirection.up;
 							}
 						}else if(opp < 0.1){
 							if(oA.x < oB.x){
-								angle_base = do_refact ? 270F :90F;
-								directionTended = do_refact ? TendDirection.left : TendDirection.right ;
+								angle_base = 90F;
+								angle_refact = 270F;
+								directionTended =  TendDirection.right ;
+								directionRefact = TendDirection.left;
 							}else if(oA.x > oB.x){
-								angle_base = do_refact ? 90F :270F;
-								directionTended = do_refact ? TendDirection.right : TendDirection.left ;
+								angle_base = 270F;
+								angle_refact = 90F;
+								directionTended = TendDirection.left ;
+								directionRefact = TendDirection.right;
 							}
 						}
-					}else if(oA.x < oB.x){
-						float _base = do_refact ? 270F :90F;
-						if(oA.z < oB.z){
+					}else if(oA.x < oB.x){ //target on right
+						float _base = 90F;
+						float _refact = 270F;
+						if(oA.z < oB.z){ //target on top
 							angle_base = _base - angleInTan;
-							directionTended = do_refact ? TendDirection.upleft : TendDirection.upright ;
-						}else if(oA.z > oB.z){
+							angle_refact = _refact - angleInTan;
+							directionTended = TendDirection.upright ;
+							directionRefact = TendDirection.downleft;
+						}else if(oA.z > oB.z){ //target on down
 							angle_base = _base + angleInTan;
-							directionTended = do_refact ? TendDirection.downleft : TendDirection.downright ;
+							angle_refact = _refact + angleInTan;
+							directionTended = TendDirection.downright ;
+							directionRefact = TendDirection.upleft;
 						}
-					}else if(oA.x > oB.x){
-						float _base = do_refact ? 90F :270F;
-						if(oA.z < oB.z){
+					}else if(oA.x > oB.x){ // target on left
+						float _base = 270F;
+						float _refact = 90F;
+						if(oA.z < oB.z){ //target on top
 							angle_base = _base + angleInTan;
-							directionTended = do_refact ? TendDirection.upright : TendDirection.upleft ;
-						}else if(oA.z > oB.z){
+							angle_refact = _refact + angleInTan;
+							directionTended = TendDirection.upleft ;
+							directionRefact = TendDirection.downright;
+						}else if(oA.z > oB.z){ //target on down
 							angle_base = _base - angleInTan;
-							directionTended = do_refact ? TendDirection.downright : TendDirection.downleft ;
+							angle_refact = _refact - angleInTan;
+							directionTended = TendDirection.downleft ;
+							directionRefact = TendDirection.upright;
 						}
 					}
 				}
+				Debug.Log("A("+oA.x+","+oA.z+")  B("+oB.x+","+oB.z+")");
+				Debug.Log(" target in "+ directionTended+" , refact"+ directionRefact );
 			}
 		}
+	}
 
-		return angle_base;
+	public Vector3 GetPosition( float n_distance , bool do_refact )
+	{
+		myTransfrom = myObject.transform;
+		Vector3 n_position = myTransfrom.position;
+
+		float new_x = Mathf.Sin( (Mathf.PI/180) * angle_base) * n_distance;  //Mathf.Abs(Mathf.Cos(angleInTan)* n_distance);
+		float new_z = Mathf.Cos( (Mathf.PI/180) * angle_base) * n_distance; //Mathf.Abs(Mathf.Sin(angleInTan)* n_distance);
+
+		if(do_refact){
+			new_x *= -1;
+			new_z *= -1;
+		}
+
+		switch( directionTended )
+		{
+		case Angle.TendDirection.up:
+			n_position.z += n_distance;
+			break;
+		case Angle.TendDirection.right:
+			n_position.x += n_distance;
+			break;
+		case Angle.TendDirection.left:
+			n_position.x -= n_distance;
+			break;
+		case Angle.TendDirection.down:
+			n_position.z -= n_distance;
+			break;
+		case Angle.TendDirection.upright:
+			n_position.x += new_x;
+			n_position.z += new_z;
+			break;
+		case Angle.TendDirection.upleft:
+			n_position.x += new_x;
+			n_position.z += new_z;
+			break;
+		case Angle.TendDirection.downright:
+			n_position.x += new_x;
+			n_position.z += new_z;
+			break;
+		case Angle.TendDirection.downleft:
+			n_position.x += new_x;
+			n_position.z += new_z;
+			break;
+		}
+
+//		Debug.DrawLine(myTransfrom.position, n_position);
+		Debug.Log(" angle("+angleInTan+") to ( " +new_x + "," + new_z+") \n is refact ? "+ do_refact + " direction " + ( do_refact ? directionRefact : directionTended ) + "\n pos "  + myTransfrom.position +" to " + n_position);
+
+		return n_position;
 	}
 		
 }
@@ -102,29 +185,50 @@ public class AngleProvidor : MonoBehaviour {
 	float distance_record;
 	Angle myAngle;
 
+	List<GameObject> seekingList;
 
 	// Use this for initialization
 	void Start () {
 		myAngle = new Angle();
-		myAngle.myTransfrom = gameObject.transform;
+		myAngle.myObject = gameObject;
 
 		if(target == null)
 		{
 			GetClosestUnit();
 		}
+
+		if(gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.AI 
+			|| gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport )
+		{
+			Debug.Log( "AI do select gameBoard object" );
+			seekingList = new List<GameObject>();
+			GameObject[] options = GameObject.FindGameObjectsWithTag("Unit");
+			if(options.Length > 0 )
+			{
+				foreach( GameObject seekingUnit in options)	
+				{
+					//Type form
+					UnitProperty.UnitType seekingType = seekingUnit.GetComponent<UnitProperty>().type_init;
+					if(seekingUnit.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.Player 
+						|| seekingUnit.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport)
+					{
+						seekingType = UnitProperty.UnitType.Player;
+					}
+
+					if(seekingType == targetType)
+					{
+						seekingList.Add(seekingUnit);
+					}
+				}
+			}
+		}
 	}
 
-	public void AIAction()
+	public void AIAction( bool isAttack )
 	{
 		if(gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.AI 
 			|| gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport )
 		{
-			if(do_FindClosestTarget)
-			{
-				do_FindClosestTarget = false;
-				target = null;
-			}
-
 			if(target != null)
 			{
 				//after found new target, lookat that
@@ -134,11 +238,13 @@ public class AngleProvidor : MonoBehaviour {
 					UnitProperty comp = GetComponent<UnitProperty>();
 					if(comp != null)
 					{
-						comp.AIActionMoveTo( GetTendPosition(target,comp.attack_radius/2) );
+						if(isAttack)
+						{
+							comp.AIActionMoveTo( GetTendPosition(target,comp.attack_radius/2) );	
+						}else{
+							comp.AIActionMoveTo( GetRefactPosition(target,comp.attack_radius/2) );
+						}
 					}
-				}else{
-					target = null;
-					LookAtWithAngle(0);	
 				}
 
 			}else{
@@ -146,7 +252,6 @@ public class AngleProvidor : MonoBehaviour {
 			}
 		}else{
 			//should UnitType.Player
-
 		}
 	}
 
@@ -157,123 +262,39 @@ public class AngleProvidor : MonoBehaviour {
 
 	public Vector3 GetTendPosition( GameObject in_object, float n_distance )
 	{
-		Vector3 n_position = Vector3.zero;
-
 		float get_angle360 = myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
-		float get_angle = myAngle.getCurrentAngle();
 
-		float new_x = Mathf.Cos(get_angle)* n_distance;// * Mathf.Rad2Deg * n_distance;
-		float new_z = Mathf.Sin(get_angle)* n_distance;// * Mathf.Rad2Deg * n_distance;
-
-		Debug.Log( "(" +gameObject.name+ ") Get ("+in_object.name+") Position ? " + new_x + "," + new_z  + "\n Direction ?" + myAngle.getCurrentDirection() +" \n angle ? " + get_angle);
-
-		switch(myAngle.getCurrentDirection())
-		{
-		case Angle.TendDirection.up:
-			n_position.z = -n_distance;
-			break;
-		case Angle.TendDirection.right:
-			n_position.x = n_distance;
-			break;
-		case Angle.TendDirection.left:
-			n_position.x = -n_distance;
-			break;
-		case Angle.TendDirection.down:
-			n_position.z = n_distance;
-			break;
-		case Angle.TendDirection.upright:
-			n_position.x = -new_x;
-			n_position.z = new_z;
-			break;
-		case Angle.TendDirection.upleft:
-			n_position.x = new_x;
-			n_position.z = new_z;
-			break;
-		case Angle.TendDirection.downright:
-			n_position.x = -new_x;
-			n_position.z = -new_z;
-			break;
-		case Angle.TendDirection.downleft:
-			n_position.x = new_x;
-			n_position.z = -new_z;
-			break;
-		}
+		//get distance from Angle Class
+		Vector3 n_position = myAngle.GetPosition( n_distance, false );
 
 		return n_position;
 	}
 
 	public Vector3 GetRefactPosition( GameObject in_object, float n_distance )
 	{
-		Vector3 n_position = Vector3.zero;
+		float get_angle360 = myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
 
-		float get_angle360 = myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,true);
-		float get_angle = myAngle.getCurrentAngle();
-
-		float new_x = Mathf.Cos(get_angle)* n_distance;// * Mathf.Rad2Deg * n_distance;
-		float new_z = Mathf.Sin(get_angle)* n_distance;// * Mathf.Rad2Deg * n_distance;
-
-		Debug.Log( "(" +gameObject.name+ ") Get ("+in_object.name+") Position ? " + new_x + "," + new_z  + "\n Direction ?" + myAngle.getCurrentDirection() +" \n angle ? " + get_angle);
-
-		switch(myAngle.getCurrentDirection())
-		{
-			case Angle.TendDirection.up:
-				n_position.z = n_distance;
-			break;
-			case Angle.TendDirection.right:
-				n_position.x = -n_distance;
-			break;
-			case Angle.TendDirection.left:
-				n_position.x = n_distance;
-			break;
-			case Angle.TendDirection.down:
-				n_position.z = -n_distance;
-			break;
-			case Angle.TendDirection.upright:
-				n_position.x = new_x;
-				n_position.z = new_z;
-			break;
-			case Angle.TendDirection.upleft:
-				n_position.x = new_x;
-				n_position.z = new_z;
-			break;
-			case Angle.TendDirection.downright:
-				n_position.x = new_x;
-				n_position.z = new_z;
-			break;
-			case Angle.TendDirection.downleft:
-				n_position.x = new_x;
-				n_position.z = new_z;
-			break;
-		}
+		//get distance from Angle Class
+		Vector3 n_position = myAngle.GetPosition( n_distance, true );
 
 		return n_position;
 	}
 
 	public GameObject GetClosestUnit()
 	{
-		GameObject[] options = GameObject.FindGameObjectsWithTag("Unit");
-		if(options.Length > 0)
+		if( seekingList != null && seekingList.Count > 0)
 		{
 			float distance_mark = -1;
-			foreach( GameObject n_target in options  )
+			foreach( GameObject n_target in seekingList.ToArray()  )
 			{
 				if( n_target.GetComponent<UnitProperty>() != null)
 				{
-					bool chooseable = false; 
+					bool chooseable = false;
 					if(n_target.GetComponent<UnitProperty>().getCurrentState() != UnitProperty.UnitState.Disable)
 					{
-						UnitProperty.UnitType seekingType = n_target.GetComponent<UnitProperty>().type_init;
-						if(n_target.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.Player 
-							|| n_target.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport)
-						{
-							seekingType = UnitProperty.UnitType.Player;
-						}
-
-						if(seekingType == targetType)
-						{
-							chooseable = true;
-						}
+						chooseable = true;
 					}
+
 
 					Vector3 oA = transform.position;
 					Vector3 oB = n_target.transform.position;	
@@ -287,9 +308,9 @@ public class AngleProvidor : MonoBehaviour {
 					float exact_DT = n_distance - Mathf.Max(n_target.transform.localScale.x , n_target.transform.localScale.z)/2;
 
 					//SR ( search Range ): search Range should for much far as vision 
-					float exact_SR = searchRange * 3 + ( isSearchRangeIncludeSelfSize ? Mathf.Max(transform.localScale.x , transform.localScale.z) : 0F );
+					float exact_SR = searchRange * 10 + ( isSearchRangeIncludeSelfSize ? Mathf.Max(transform.localScale.x , transform.localScale.z) : 0F );
 
-					if((target == null) || exact_DT < distance_mark || distance_mark == -1)
+					if(exact_DT < distance_mark || distance_mark == -1)
 					{
 						if(exact_SR >= exact_DT && chooseable)
 						{
@@ -314,21 +335,12 @@ public class AngleProvidor : MonoBehaviour {
 	{
 		if(n_target != null && n_target.GetComponent<UnitProperty>() != null)
 		{
-			bool chooseable = false; 
+			bool chooseable = false;
 			if(n_target.GetComponent<UnitProperty>().getCurrentState() != UnitProperty.UnitState.Disable)
 			{
-				UnitProperty.UnitType seekingType = n_target.GetComponent<UnitProperty>().type_init;
-				if(n_target.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.Player 
-					|| n_target.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport)
-				{
-					seekingType = UnitProperty.UnitType.Player;
-				}
-
-				if(seekingType == targetType)
-				{
-					chooseable = true;
-				}
+				chooseable = true;
 			}
+
 			Vector3 oA = transform.position;
 			Vector3 oB = n_target.transform.position;	
 
@@ -339,7 +351,7 @@ public class AngleProvidor : MonoBehaviour {
 
 			float exact_DT = n_distance - Mathf.Max(n_target.transform.localScale.x , n_target.transform.localScale.z)/2;
 			float exact_SR = searchRange + ( isSearchRangeIncludeSelfSize ? Mathf.Max(transform.localScale.x , transform.localScale.z) : 0F );
-			if(exact_SR >= exact_DT && chooseable)
+			if((exact_SR >= exact_DT && chooseable) || seekingList.Count == 1)
 			{
 				return true;
 			}
