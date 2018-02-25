@@ -2,6 +2,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+public class SpeedUnit{
+	public float speed_base = 0;
+	public float speed_delta = 0;
+
+	public void UpdateSpeed( float time_past)
+	{
+		
+	}
+}
+
 public class KnockBackHelper : MonoBehaviour {
 
 	public float radius_explode = 5.0F;
@@ -35,7 +46,7 @@ public class KnockBackHelper : MonoBehaviour {
 	void Update () {
 		if(doExplode)
 		{
-//			doExplodionKnockBackWithPhysic();
+			doExplodionKnockBackWithTween( GameObject.FindGameObjectWithTag("Item") , 300F );
 			doExplode = false;
 		}
 
@@ -95,29 +106,40 @@ public class KnockBackHelper : MonoBehaviour {
 			deltaPosition.x += gameObject.transform.position.x;
 			deltaPosition.z += gameObject.transform.position.z;
 
+			Debug.Log("("+gameObject.name+") kockBack by ("+ by_target.name+ ") to " + deltaPosition );
 			doMoveToPosition(deltaPosition);
 
-			Debug.Log("("+gameObject.name+") kockBack by ("+ by_target.name+ ") to " + deltaPosition );
 		}else{
 			Debug.Log("kockBack not effected !! position ? " + deltaPosition );
 		}
-		Hashtable map = iTween.Hash();
-		iTween.MoveTo(gameObject ,map);
 	}
 
 	public void doMoveToPosition(Vector3 n_point)
 	{
-		{
-			Debug.Log("("+gameObject.name+") MoveTo " + n_point );
+		Debug.Log("("+gameObject.name+") MoveTo " + n_point );
 
-			float moveSpeed = 10F;
-			Hashtable moveHash = iTween.Hash("x", n_point.x, "z", n_point.z, "easeType", "easeInOutExpo", "loopType", "none", "speed", moveSpeed);
-			moveHash.Add("onstarttarget",gameObject);
-			moveHash.Add("onstart","moveStart");
-			moveHash.Add("oncompletetarget",gameObject);
-			moveHash.Add("oncomplete","moveEnd");
-			iTween.MoveTo(gameObject, moveHash);
-		}
+		float moveSpeed = 10F;
+		Hashtable moveHash = iTween.Hash("x", n_point.x, "z", n_point.z, "easeType", "linear", "loopType", "none", "speed", moveSpeed);
+		moveHash.Add("onstarttarget",gameObject);
+		moveHash.Add("onstart","moveStart");
+		moveHash.Add("oncompletetarget",gameObject);
+		moveHash.Add("oncomplete","moveEnd");
+		iTween.MoveTo(gameObject, moveHash);
+	}
+
+	public void doMoveToPositionWithUpdate(Vector3 n_point)
+	{
+		Debug.Log("("+gameObject.name+") MoveTo " + n_point +" With update" );
+
+		float moveSpeed = 10F;
+		Hashtable moveHash = iTween.Hash("x", n_point.x, "z", n_point.z, "easeType", "linear", "loopType", "none", "speed", moveSpeed);
+		moveHash.Add("onstarttarget",gameObject);
+		moveHash.Add("onstart","moveStart");
+		moveHash.Add("oncompletetarget",gameObject);
+		moveHash.Add("oncomplete","moveEnd");
+		moveHash.Add("onupdatetarget",gameObject);
+		moveHash.Add("onupdate","onMoveUpdate");
+		iTween.MoveTo(gameObject, moveHash);
 	}
 
 	public float ReceivePowerToDistance( float n_power , float n_dist)
@@ -125,5 +147,10 @@ public class KnockBackHelper : MonoBehaviour {
 		float dist_out = 0F;
 
 		return dist_out;
+	}
+
+	public void onMoveUpdate()
+	{
+		Debug.Log("onMoveUpdate");
 	}
 }

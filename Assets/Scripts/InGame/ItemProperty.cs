@@ -36,10 +36,10 @@ public class ItemProperty : MonoBehaviour {
 				switch(type)
 				{
 				case ItemType.heath:
-					coll_Unit.addHeathPoint(value);
+					coll_Unit.addHealthPoint(value);
 					break;
 				case ItemType.poison:
-					coll_Unit.addHeathPoint(-value);
+					coll_Unit.addHealthPoint(-value);
 					break;
 				case ItemType.power:
 					coll_Unit.setPowerBuffWithDuration(value , value_duration);

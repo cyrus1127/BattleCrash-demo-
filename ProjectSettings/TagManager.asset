@@ -8,6 +8,7 @@ TagManager:
   - PlayerUnit
   - UnitPointer
   - Item
+  - board
   layers:
   - Default
   - TransparentFX
