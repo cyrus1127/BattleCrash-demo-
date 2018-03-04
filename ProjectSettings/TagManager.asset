@@ -9,6 +9,7 @@ TagManager:
   - UnitPointer
   - Item
   - board
+  - wall
   layers:
   - Default
   - TransparentFX

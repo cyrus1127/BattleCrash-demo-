@@ -4,14 +4,16 @@ using UnityEngine;
 
 public class UnitProperty : MonoBehaviour {
 
-	public float healthPoint_Init;
-	public float weight_init;
-	public float power_init;
-	public float attack_radius = 5F;
-	public float friction = 0.5F;
-	public float coolDownTime_normalAttack = 0.2F;
-	public UnitState state_init;
 	public UnitType type_init;
+	public UnitState state_init;
+	public float healthPoint_Init = 10;
+	public float weight_init = 1;
+	public float power_init = 1;
+	public float chargebonus_init = 1;
+	public float speedUpDuration_init = 0.2F;
+	public float attack_radius = 5F;
+	public float friction = 0F;
+	public float coolDownTime_normalAttack = 0.2F;
 	public float AIWarninghealthPercentage = 30; //For AI
 
 	AttachBarHandler[] barHanders;
@@ -23,10 +25,16 @@ public class UnitProperty : MonoBehaviour {
 	float weight_buff;
 	float power;
 	float power_buff;
+	float chargebonus;
+	float chargebonus_buff;
+	float speedUpDuration;
+	float speedUpDuration_buff;
 	float buff_duration;
+	AngleProvidor myAngleProvidor;
 	BuffType curBuffType;
 	UnitState state;
 	GameBoard delegate_board;
+
 
 	bool onMove_AI;
 	public bool debug_onMove_AI = false;
@@ -61,14 +69,32 @@ public class UnitProperty : MonoBehaviour {
 		healthPoint = healthPoint_Init;
 		power = power_init;
 		weight = weight_init;
+		speedUpDuration = speedUpDuration_init;
+		chargebonus = chargebonus_init;
 
 		power_buff = 0;
 		weight_buff = 0;
 		healthPoint_buff = 0;
+		chargebonus_buff = 0;
+		speedUpDuration_buff = 0;
 		state = state_init;
 		onMove_AI = false;
+
+
 	}
-	
+
+	void initAngleProvidor()
+	{
+		myAngleProvidor = GetComponent<AngleProvidor>();
+		if(myAngleProvidor == null)
+		{
+			myAngleProvidor = gameObject.AddComponent<AngleProvidor>();
+		}
+
+		myAngleProvidor.searchRange = attack_radius * 2;	
+
+	}
+
 	// Update is called once per frame
 	void Update () {
 		UpdateAttackCDTimeBar();
@@ -76,6 +102,11 @@ public class UnitProperty : MonoBehaviour {
 
 		//AI
 		UpdateAIAction();
+
+		if(type_init == UnitType.Player)
+		{
+			//do we need to do attack ??
+		}
 	}
 
 	/// <summary>
@@ -92,14 +123,19 @@ public class UnitProperty : MonoBehaviour {
 				if( getIsReadyToAttack() )
 				{
 					isTimeToAttack = true;
+
+					//A.I do check current Heath Point is eqaul or under Warninghealth
 					if(AIWarninghealthPercentage > 0 && healthPoint <= (healthPoint_Init * AIWarninghealthPercentage)/100 )
-					{
+					{// is in danger 
+						
 //						if(Random.Range(0,10) < 8)
 //						{
 //							isTimeToAttack = true;
 //						}else{
-//							isTimeToAttack = false;
+							isTimeToAttack = false;
 //						}
+					}else{
+						//do attack
 					}
 				}
 					
@@ -113,7 +149,11 @@ public class UnitProperty : MonoBehaviour {
 	{
 		KnockBackHelper comp_kb = GetComponent<KnockBackHelper>();
 		if(comp_kb != null){
-			comp_kb.doMoveToPositionWithUpdate(n_point);
+
+			SpeedUnit n_speedUnit = new SpeedUnit();
+			n_speedUnit.setTarget( getMaxMoveSpeed() , attack_radius/2 , getSpeedUpDuration() );
+
+			comp_kb.doMoveToPositionWithUpdate(n_speedUnit , n_point);
 			Debug.Log("Do move to " + n_point);
 		}
 	}
@@ -125,15 +165,26 @@ public class UnitProperty : MonoBehaviour {
 
 	public void PlayerActionMoveTo( Vector3 n_point )
 	{
-		KnockBackHelper comp_kb = GetComponent<KnockBackHelper>();
-		if(comp_kb != null){
-			comp_kb.doMoveToPositionWithUpdate(n_point);
-			Debug.Log("Do move to " + n_point);
-		}
-
 		//tend to target position
 		AngleProvidor comp_tend = GetComponent<AngleProvidor>();
-		comp_tend.LookAtWithTargetPosition(n_point,false);
+		float lookAtPos_distance = comp_tend.LookAtWithTargetPosition(n_point,false);
+
+		//do transform the n_point with maximu move distance
+		if(lookAtPos_distance > attack_radius/2)
+		{
+			Debug.Log("lookat Position "+ n_point+" is too far. ");
+			n_point = comp_tend.GetTendPositionWithOutNewTarget(attack_radius/2);	
+		}
+
+		KnockBackHelper comp_kb = GetComponent<KnockBackHelper>();
+		if(comp_kb != null){
+
+			SpeedUnit n_speedUnit = new SpeedUnit();
+			n_speedUnit.setTarget( getMaxMoveSpeed() , attack_radius/2 , getSpeedUpDuration() );
+
+			comp_kb.doMoveToPositionWithUpdate(n_speedUnit,n_point);
+			Debug.Log("Do move to " + n_point);
+		}
 	}
 
 	public void setGameBoardDelegate( GameBoard _delegate )
@@ -201,7 +252,7 @@ public class UnitProperty : MonoBehaviour {
 
 	public void moveStart(){
 		enableRigidKinematic();
-		Debug.Log("("+gameObject.name+") moveStart" );
+//		Debug.Log("("+gameObject.name+") moveStart" );
 		if(type_init == UnitType.AI || type_init == UnitType.PlayerSupport)
 		{
 			onMove_AI = true;
@@ -209,8 +260,8 @@ public class UnitProperty : MonoBehaviour {
 	}
 
 	public void moveEnd(){
-		disableRigidKinematic();
-		Debug.Log("("+gameObject.name+") moveEnd" );
+//		disableRigidKinematic();
+//		Debug.Log("("+gameObject.name+") moveEnd" );
 		GameObject target = gameObject.GetComponent<AngleProvidor>().GetClosestUnit();
 		if(target != null)
 		{
@@ -274,23 +325,24 @@ public class UnitProperty : MonoBehaviour {
 	//getter
 	public UnitState getCurrentState(){ return state; }
 	public bool getIsReadyToAttack(){ return isReadyToAttack; }
-	public float getCurrentWeight(){ return weight_init + weight_buff; }
-	public float getCurrentPower(){ return power_init + power_buff; }
-	public float getChargeBonus(){ return 3F; }
-	public float getKnockPower(){
-		float knockPower_out = getCurrentMoveSpeed() * getChargeBonus();
+	public float getCurrentWeight(){ return weight + weight_buff; }
+	public float getCurrentPower(){ return power + power_buff; }
+	public float getChargeBonus(){ return chargebonus + chargebonus_buff; }
+	public float getSpeedUpDuration(){ return speedUpDuration + speedUpDuration_buff; }
+	public float getKnockPower()
+	{
+		float knockPower_out = 0;
+		if(GetComponent<KnockBackHelper>() != null)
+		{
+			knockPower_out = GetComponent<KnockBackHelper>().GetCurrentMoveSpeed() * getChargeBonus();	
+		}
 		return knockPower_out;
 	}
 		
-	float getMaxMoveSpeed()
+	public float getMaxMoveSpeed()
 	{
 		float speed_out = Mathf.Round(getCurrentPower()/ getCurrentWeight());
 		return speed_out;
-	}
-
-	float getCurrentMoveSpeed()
-	{
-		return 0F;
 	}
 
 	float getKnockDistance(float targetWeight){
@@ -323,6 +375,10 @@ public class UnitProperty : MonoBehaviour {
 			if(coll_Unit != null){
 				CheckAttack(coll_Unit);	
 			}
+		}else if(collision.gameObject.tag == "wall")
+		{
+//			removeiTweenComponent();
+//			moveEnd();
 		}
 	}
 		
@@ -333,7 +389,7 @@ public class UnitProperty : MonoBehaviour {
 		if(coll_Unit.gameObject.tag == "Unit"){
 			//hit the units are face to face 
 			enableRigidKinematic();
-			Debug.Log(" get object " + coll_Unit.gameObject.name +  "is  trigger entered ");
+//			Debug.Log(" get object " + coll_Unit.gameObject.name +  "is  trigger entered ");
 			if(coll_Unit != null)
 			{
 				float distance = GetComponent<AngleProvidor>().GetCurrentDistance();
@@ -345,7 +401,7 @@ public class UnitProperty : MonoBehaviour {
 				}
 
 				if(coll_Unit.getIsReadyToAttack()){
-					Debug.Log("wiil receive unit("+ coll_Unit.gameObject.name+ ") attack");
+//					Debug.Log("wiil receive unit("+ coll_Unit.gameObject.name+ ") attack");
 				}
 			}
 
@@ -375,7 +431,6 @@ public class UnitProperty : MonoBehaviour {
 		}else{
 			Debug.Log("knockback not found");
 		}
-
-
+			
 	}
 }

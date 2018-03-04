@@ -13,16 +13,75 @@ public class AngleUnit
 	float angleInTan = 0F;
 	float angle_base = 0F;
 	float angle_refact = 0F;
+	float distance = 0F;
 
-	public TendDirection getCurrentDirection(){ return directionTended;}
-	public TendDirection getCurrentRefactDirection(){ return directionRefact;}
 
-	public float getCurrentAngle(){ return angleInTan;}
+	public void setCurrentDirect(TendDirection n_direct){ directionTended = n_direct; }
+	public void setCurrentAngle(float n_angle360){ 
+		
+		if(angle_base != n_angle360)
+		{
+			angle_base = n_angle360; 
+			//auto define direction
+			directionTended = angleToDirection(angle_base);
+		}
+	}
+
+	TendDirection angleToDirection(float in_angle360)
+	{
+		float angle_form = in_angle360 % 360;
+		TendDirection out_dir = TendDirection.undefine;
+
+		if(angle_form > 360-1 && angle_form < 1)//is up
+		{
+			out_dir = TendDirection.up;
+		}
+		if(angle_form > 90-1 && angle_form < 90+1)//is left
+		{
+			out_dir = TendDirection.left;
+		}
+		if(angle_form > 90-1 && angle_form < 90+1)//is right
+		{
+			out_dir = TendDirection.right;
+		}
+		if(angle_form > 270-1 && angle_form < 270+1)//is left
+		{
+			out_dir = TendDirection.left;
+		}
+
+		if(angle_form >= 1 && angle_form <= 90-1)
+		{
+			out_dir = TendDirection.upright;
+		}
+
+		if(angle_form >= 270+1 && angle_form <= 360-1)
+		{
+			out_dir = TendDirection.upleft;
+		}
+
+		if(angle_form >= 180+1 && angle_form <= 270-1)
+		{
+			out_dir = TendDirection.downleft;
+		}
+
+		if(angle_form >= 90+1 && angle_form <= 180-1)
+		{
+			out_dir = TendDirection.downright;
+		}
+		
+		return out_dir;
+	}
 
 	public void setTarget( Vector3 p_target )
 	{
 		DoCalculate(p_target);
 	}
+
+	public float getCurrentDistance(){ return distance; }
+	public TendDirection getCurrentDirection(){ return directionTended;}
+	public TendDirection getCurrentRefactDirection(){ return directionRefact;}
+	public float getCurrentAngle(){ return angleInTan;}
+	public float getCurrentAngleBase(){ return angle_base;}
 
 	public float GetAngleBaseMyPositionWithObject( Transform b_target , bool do_refact)
 	{
@@ -48,6 +107,8 @@ public class AngleUnit
 			{
 				float opp = Mathf.Max(oA.z, oB.z) - Mathf.Min(oA.z,oB.z);
 				float adj = Mathf.Max(oA.x, oB.x) - Mathf.Min(oA.x,oB.x);
+
+				distance = Mathf.Sqrt( Mathf.Pow(opp , 2F) + Mathf.Pow(adj , 2F));
 
 				if(opp > 0.1 && adj > 0.1)
 				{
@@ -111,8 +172,8 @@ public class AngleUnit
 						}
 					}
 				}
-				Debug.Log("A("+oA.x+","+oA.z+")  B("+oB.x+","+oB.z+")");
-				Debug.Log(" target in "+ directionTended+" , refact"+ directionRefact );
+//				Debug.Log("A("+oA.x+","+oA.z+")  B("+oB.x+","+oB.z+")");
+//				Debug.Log(" target in "+ directionTended+" , refact"+ directionRefact );
 			}
 		}
 	}
@@ -166,7 +227,7 @@ public class AngleUnit
 		}
 
 		//		Debug.DrawLine(myTransfrom.position, n_position);
-		Debug.Log(" angle("+angleInTan+") to ( " +new_x + "," + new_z+") \n is refact ? "+ do_refact + " direction " + ( do_refact ? directionRefact : directionTended ) + "\n pos "  + myTransfrom.position +" to " + n_position);
+//		Debug.Log(" angle("+angleInTan+") to ( " +new_x + "," + new_z+") \n is refact ? "+ do_refact + " direction " + ( do_refact ? directionRefact : directionTended ) + "\n pos "  + myTransfrom.position +" to " + n_position);
 
 		return n_position;
 	}

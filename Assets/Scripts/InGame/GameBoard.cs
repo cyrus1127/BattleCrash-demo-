@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GameBoard : MonoBehaviour {
 
+	public CanvasHandler myUICanvas;
 	public GameObject markPrefab;
 	public InGameLogic main;
 	public Camera worldCam;
@@ -27,6 +28,12 @@ public class GameBoard : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+
+		if(myUICanvas != null)
+		{
+			myUICanvas.setGameStart();
+		}
+
 		if(marks == null){
 			marks = new List<GameObject>();
 		}

@@ -15,6 +15,7 @@ public class AngleProvidor : MonoBehaviour {
 	bool do_FindClosestTarget = false;
 	float distance_record;
 	AngleUnit myAngle;
+	DetectionUnit myDetectionHelper;
 
 	List<GameObject> seekingList;
 
@@ -23,14 +24,21 @@ public class AngleProvidor : MonoBehaviour {
 		myAngle = new AngleUnit();
 		myAngle.myObject = gameObject;
 
-		if(target == null)
+		myDetectionHelper = GetComponent<DetectionUnit>();
+		if(myDetectionHelper == null)
 		{
-			GetClosestUnit();
+			myDetectionHelper = gameObject.AddComponent<DetectionUnit>();
+			myDetectionHelper.setDetectionRadius(gameObject.GetComponent<UnitProperty>().attack_radius);
 		}
 
 		if(gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.AI 
 			|| gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport )
 		{
+			if(target == null)
+			{
+				GetClosestUnit();
+			}
+
 			Debug.Log( "AI do select gameBoard object" );
 			seekingList = new List<GameObject>();
 			GameObject[] options = GameObject.FindGameObjectsWithTag("Unit");
@@ -57,32 +65,68 @@ public class AngleProvidor : MonoBehaviour {
 
 	public void AIAction( bool isAttack )
 	{
-		if(gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.AI 
-			|| gameObject.GetComponent<UnitProperty>().type_init == UnitProperty.UnitType.PlayerSupport )
-		{
-			if(target != null)
-			{
-				//after found new target, lookat that
-				if(isTargetinRange(target))
-				{
-					LookAtWithTarget(target);
-					UnitProperty comp = GetComponent<UnitProperty>();
-					if(comp != null)
-					{
-						if(isAttack)
-						{
-							comp.AIActionMoveTo( GetTendPosition(target,comp.attack_radius/2) );	
-						}else{
-							comp.AIActionMoveTo( GetRefactPosition(target,comp.attack_radius/2) );
-						}
-					}
-				}
+		UnitProperty comp = GetComponent<UnitProperty>();
 
+		if(comp != null)
+		{
+			if(comp.type_init == UnitProperty.UnitType.AI 
+				|| comp.type_init == UnitProperty.UnitType.PlayerSupport )
+			{
+				if(target != null)
+				{
+					//after found new target, lookat that
+					if(isTargetInSearchRange(target))
+					{
+
+						//do check the target is out of my attack range
+						bool isTargetInAttackRange = isTargetinRange( target , comp.attack_radius , false);
+
+						if( isTargetInAttackRange )
+						{
+							if(isAttack)
+							{
+								//be still and make attack
+								LookAtWithTarget(target);
+								comp.moveEnd(); //call MoveEnd() to do checkAttack()
+							}else{
+								//move out of Attack Range
+//								Vector3 n_pos = GetRefactPosition(target,comp.attack_radius/2);
+
+								if(myDetectionHelper.haveWaysToGoOut(myAngle))
+								{
+									//check backward possibility
+									comp.AIActionMoveTo( myAngle.GetPosition(comp.attack_radius/2,false) );
+								}else{
+									//try to Attack , as no way to go away
+									comp.moveEnd();
+								}
+							}
+						}else{
+							if(isAttack)
+							{
+								//go and make attack
+								LookAtWithTarget(target);
+								comp.AIActionMoveTo( GetTendPosition(target,comp.attack_radius/2) );	
+							}else{
+								//be still to wait
+								LookAtWithTarget(target);
+								comp.moveEnd();
+							}
+						}
+							
+					}else{
+						//do search
+						GetClosestUnit();
+					}
+
+				}else{
+					GetClosestUnit();
+				}
 			}else{
-				GetClosestUnit();
+				//should UnitType.Player
 			}
 		}else{
-			//should UnitType.Player
+			Debug.Log("A.I missing basic Component ( UnitProperty ) ");
 		}
 	}
 
@@ -93,8 +137,17 @@ public class AngleProvidor : MonoBehaviour {
 
 	public Vector3 GetTendPosition( GameObject in_object, float n_distance )
 	{
-		float get_angle360 = myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
+		//get_angle360
+		myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
 
+		//get distance from Angle Class
+		Vector3 n_position = myAngle.GetPosition( n_distance, false );
+
+		return n_position;
+	}
+
+	public Vector3 GetTendPositionWithOutNewTarget(float n_distance )
+	{
 		//get distance from Angle Class
 		Vector3 n_position = myAngle.GetPosition( n_distance, false );
 
@@ -103,7 +156,8 @@ public class AngleProvidor : MonoBehaviour {
 
 	public Vector3 GetRefactPosition( GameObject in_object, float n_distance )
 	{
-		float get_angle360 = myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
+		//get_angle360
+		myAngle.GetAngleBaseMyPositionWithObject(in_object.transform,false);
 
 		//get distance from Angle Class
 		Vector3 n_position = myAngle.GetPosition( n_distance, true );
@@ -111,6 +165,12 @@ public class AngleProvidor : MonoBehaviour {
 		return n_position;
 	}
 
+
+	/*
+	 * This Method should just provide to A.I. to have a ability to search enemy.
+	 * If lose the target A.I. would not do move and attack. 
+	 * Is an important part on console
+	 */
 	public GameObject GetClosestUnit()
 	{
 		if( seekingList != null && seekingList.Count > 0)
@@ -162,7 +222,7 @@ public class AngleProvidor : MonoBehaviour {
 		return target;
 	}
 
-	bool isTargetinRange( GameObject n_target )
+	public bool isTargetinRange( GameObject n_target , float expectedRange , bool justForSearch)
 	{
 		if(n_target != null && n_target.GetComponent<UnitProperty>() != null)
 		{
@@ -180,26 +240,50 @@ public class AngleProvidor : MonoBehaviour {
 
 			float n_distance = Mathf.Sqrt( Mathf.Pow(opp , 2F) + Mathf.Pow(adj , 2F));
 
+			//DT ( distance ) : 
 			float exact_DT = n_distance - Mathf.Max(n_target.transform.localScale.x , n_target.transform.localScale.z)/2;
-			float exact_SR = searchRange + ( isSearchRangeIncludeSelfSize ? Mathf.Max(transform.localScale.x , transform.localScale.z) : 0F );
-			if((exact_SR >= exact_DT && chooseable) || seekingList.Count == 1)
+
+			//SR ( search Range ): search Range should for much far as vision 
+			float exact_SR = expectedRange - ( isSearchRangeIncludeSelfSize ? Mathf.Max(transform.localScale.x , transform.localScale.z) : 0F );
+			if((exact_SR >= exact_DT && chooseable))
 			{
+				if(justForSearch)
+				{
+					if(seekingList.Count > 1)
+					{
+						return false;	
+					}	
+				}
+
 				return true;
 			}
 		}
 
 		return false;
+
 	}
 
-	public void LookAtWithTargetPosition(Vector3 position, bool is_refactAngle){
+	// override the isTargetinRange(GameObject,Float) for just for searchRange
+	bool isTargetInSearchRange( GameObject n_target )
+	{
+		return isTargetinRange(n_target, searchRange * 10 , true);
+	}
+
+	//will return distance
+	public float LookAtWithTargetPosition(Vector3 position, bool is_refactAngle){
 		do_refactAngle = is_refactAngle;
 		float angle = myAngle.GetAngleBaseMyPositionWithObject(position , do_refactAngle);
 		LookAtWithAngle( angle );
+
+		return myAngle.getCurrentDistance();
 	}
 
-	public void LookAtWithTarget(GameObject n_target, bool is_refactAngle){
+	//will return distance
+	public float LookAtWithTarget(GameObject n_target, bool is_refactAngle){
 		do_refactAngle = is_refactAngle;
 		LookAtWithTarget(n_target);
+
+		return myAngle.getCurrentDistance();
 	}
 
 	void LookAtWithTarget(GameObject n_target){

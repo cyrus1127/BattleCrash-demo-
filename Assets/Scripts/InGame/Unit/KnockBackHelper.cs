@@ -3,30 +3,55 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class SpeedUnit{
-	public float speed_base = 0;
-	public float speed_delta = 0;
+public class MoveUpdateHelper 
+{
+	Vector3[] controlPath; // reference to the path
+	GameObject target;
+	SpeedUnit myMove;
 
-	public void UpdateSpeed( float time_past)
+	public void Update()
 	{
-		
+		{
+			float distancePast = 0F;
+			float moveSpeed = myMove.UpdateSpeed(Time.deltaTime,distancePast); 
+			float timeScale = myMove.getTimeScaleBySpeed();
+			Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed + " , time ? " + timeScale);
+
+		}
+	}
+
+	public bool isMoveEnd()
+	{
+		if(target.transform.position.Equals( controlPath[1]))
+		{
+			return true;
+		}
+
+		return false;
 	}
 }
+
 
 public class KnockBackHelper : MonoBehaviour {
 
 	public float radius_explode = 5.0F;
 	public bool doExplode = false;
+	public float speedUpDuration = 0.2F;
 
 	float power = 0F;
 	float upWard = 0F;
 
 	Vector3 startPos;
+	iTween cur_tween;
+	SpeedUnit myMove;
+
+	MoveUpdateHelper myMoveUpdate;
 
 	// Use this for initialization
 	void Start () {
 		doExplode = false;
 		startPos = transform.position;
+//		myMove = new SpeedUnit();
 	}
 
 	public void doResetPostion()
@@ -50,6 +75,14 @@ public class KnockBackHelper : MonoBehaviour {
 			doExplode = false;
 		}
 
+		if(myMoveUpdate != null)
+		{
+			myMoveUpdate.Update();
+			if(myMoveUpdate.isMoveEnd())
+			{
+				myMoveUpdate = null;	
+			}
+		}
 
 		DrawDebugline();
 	}
@@ -103,8 +136,8 @@ public class KnockBackHelper : MonoBehaviour {
 
 		if(deltaPosition != Vector3.zero)
 		{
-			deltaPosition.x += gameObject.transform.position.x;
-			deltaPosition.z += gameObject.transform.position.z;
+//			deltaPosition.x += gameObject.transform.position.x;
+//			deltaPosition.z += gameObject.transform.position.z;
 
 			Debug.Log("("+gameObject.name+") kockBack by ("+ by_target.name+ ") to " + deltaPosition );
 			doMoveToPosition(deltaPosition);
@@ -127,19 +160,30 @@ public class KnockBackHelper : MonoBehaviour {
 		iTween.MoveTo(gameObject, moveHash);
 	}
 
-	public void doMoveToPositionWithUpdate(Vector3 n_point)
+	public void doMoveToPositionWithUpdate(SpeedUnit in_speedUnit , Vector3 n_point)
 	{
 		Debug.Log("("+gameObject.name+") MoveTo " + n_point +" With update" );
 
-		float moveSpeed = 10F;
-		Hashtable moveHash = iTween.Hash("x", n_point.x, "z", n_point.z, "easeType", "linear", "loopType", "none", "speed", moveSpeed);
-		moveHash.Add("onstarttarget",gameObject);
-		moveHash.Add("onstart","moveStart");
-		moveHash.Add("oncompletetarget",gameObject);
-		moveHash.Add("oncomplete","moveEnd");
-		moveHash.Add("onupdatetarget",gameObject);
-		moveHash.Add("onupdate","onMoveUpdate");
-		iTween.MoveTo(gameObject, moveHash);
+		if(in_speedUnit != null)
+		{
+//			moveUpdatePos = n_point;
+			myMove = in_speedUnit;
+			myMove.getTimeScaleBySpeed();
+			Hashtable moveUpdateHash = iTween.Hash("x", n_point.x, "z", n_point.z, "easeType", "easeInCubic", "loopType", "none", "speed", gameObject.GetComponent<UnitProperty>().getMaxMoveSpeed());
+			moveUpdateHash.Add("onstarttarget",gameObject);
+			moveUpdateHash.Add("onstart","moveStart");
+			moveUpdateHash.Add("oncompletetarget",gameObject);
+			moveUpdateHash.Add("oncomplete","moveEnd");
+			moveUpdateHash.Add("onupdatetarget",gameObject);
+			moveUpdateHash.Add("onupdate","onMoveUpdate");
+			iTween.MoveTo(gameObject, moveUpdateHash);	
+
+			//use moveUpdate ....... 
+//			myMoveUpdate = new MoveUpdateHelper();
+		}else{
+			Debug.Log(" SpeedUnit is required ! ");
+		}
+			
 	}
 
 	public float ReceivePowerToDistance( float n_power , float n_dist)
@@ -149,8 +193,10 @@ public class KnockBackHelper : MonoBehaviour {
 		return dist_out;
 	}
 
-	public void onMoveUpdate()
+
+
+	public float GetCurrentMoveSpeed()
 	{
-		Debug.Log("onMoveUpdate");
+		return myMove.getCurSpeed();
 	}
 }
