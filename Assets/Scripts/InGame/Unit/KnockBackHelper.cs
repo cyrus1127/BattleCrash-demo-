@@ -2,41 +2,283 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+class controller_keyboard
+{
+	protected Hashtable keyMap;
+	protected List<string> hashtable_keys;
+
+	protected void addKeyMap(string keyName, string buttonName)
+	{
+		if(hashtable_keys.IndexOf(keyName) >= 0)
+		{
+			keyMap.Add(hashtable_keys[hashtable_keys.IndexOf(keyName)],buttonName);	
+		}
+	}
+
+	protected void initKeys()
+	{
+		if(hashtable_keys == null)
+		{
+			hashtable_keys = new List<string>();
+			hashtable_keys.Add("up");
+			hashtable_keys.Add("down");
+			hashtable_keys.Add("left");
+			hashtable_keys.Add("right");
+			hashtable_keys.Add("fire");
+		}
+	}
+
+	public controller_keyboard()
+	{
+//		initKeys();
+		if(keyMap == null)
+		{
+			keyMap = new Hashtable();
+
+			//init map
+			keyMap.Add("w","up");
+			keyMap.Add("s","down");
+			keyMap.Add("a","left");
+			keyMap.Add("d","right");
+			keyMap.Add("f","fire");
+		}
+	}
+		
+	public string getMappedKeyPosition(string keyName)
+	{
+		foreach(object key in keyMap.Keys)
+		{
+			string key_str = (string)key;
+			if(key_str == keyName)
+				return (string)keyMap[key];
+		}
+
+		Debug.Log("inputed key not found");
+		return string.Empty;
+	}
+}
+
+class controller_keyboard_player2 : controller_keyboard
+{
+	public controller_keyboard_player2()
+	{
+		initKeys();
+		if(keyMap == null)
+		{
+			keyMap = new Hashtable();
+
+			//init map
+			keyMap.Add("up","up");
+			keyMap.Add("down","down");
+			keyMap.Add("left","left");
+			keyMap.Add("right","right");
+			keyMap.Add("/","fire");
+		}
+	}
+}
 
 public class MoveUpdateHelper 
 {
-	Vector3[] controlPath; // reference to the path
-	GameObject target;
+	static string input_key_fire = "space";
+
+	List<Vector3> path; // reference to the path
+	Rigidbody targetRigid;
 	SpeedUnit myMove;
+	bool isPressedKeyDetected = false;
+	float targetMaxCharge = 10F;
+	float chargedPower = 0;
+	float releasePower = 0;
+
+	public void Set_ChargablePower(float in_power)
+	{
+		targetMaxCharge = in_power;
+	}
+
+	public void Set_Rigid(Rigidbody rb)
+	{
+		if(targetRigid != rb)
+			targetRigid = rb;
+
+		if(myMove == null)
+			myMove = new SpeedUnit();
+	}
+
+	public void AddPath(Vector3 n_path)
+	{
+		if(path == null)
+		{
+			path = new List<Vector3>();
+		}
+			
+		if(path.Count > 1)
+		{
+			path.Insert(0,n_path); //keep to add path on first index;
+		}else{
+			path.Add(n_path);
+		}
+	}
 
 	public void Update()
 	{
-		{
-			float distancePast = 0F;
-			float moveSpeed = myMove.UpdateSpeed(Time.deltaTime,distancePast); 
-			float timeScale = myMove.getTimeScaleBySpeed();
-			Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed + " , time ? " + timeScale);
+		handleKeyboardButton();
+		holdAndCharge();
 
+		doCheckPathAndMove();
+	}
+		
+	void handleKeyboardButton(){
+
+		if (Input.GetKeyDown(input_key_fire))
+		{
+			if(!isPressedKeyDetected)
+			{
+				isPressedKeyDetected = true;
+				chargedPower = 0; // do reset;
+				releasePower = 0;
+				Debug.Log("fire key was pressed");
+			}
+
+		}else if(Input.GetKeyUp(input_key_fire)){
+			if(isPressedKeyDetected)
+			{
+				isPressedKeyDetected = false;
+//				if(chargingPower > 0.5f)
+				{
+					//do :fire 
+					doEmit();
+				}
+				Debug.Log("fire key was released");
+			}
+		}
+	}
+
+	void holdAndCharge()
+	{
+		if(isPressedKeyDetected)
+		{
+			chargedPower += targetMaxCharge * 0.1f;
+			if(chargedPower > targetMaxCharge)
+			{
+				chargedPower = targetMaxCharge;
+				Debug.Log("Power charged done");
+			}else{
+				Debug.Log("Power is charging");
+			}
+		}
+	}
+
+	void doEmit()
+	{
+		releasePower = chargedPower;
+		chargedPower = 0;
+
+		if(releasePower > 0)
+		{
+			//setUp speedUtil
+			float total_distance = (releasePower * 60F * 0.8F);
+			myMove.setTarget(releasePower,total_distance,2);	
+		}
+	}
+
+	void doCheckPathAndMove()
+	{
+		if(path != null)
+		{
+			if(targetRigid.transform.position.Equals( path[path.Count - 1]))
+			{
+//				targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * Time.deltaTime * moveSpeed);	
+			}
+		}else{
+			if(releasePower > 0)
+			{
+				float moveSpeed = myMove.UpdateSpeed(Time.deltaTime); //get speed
+
+				if(moveSpeed > 0){
+					float timeScale = myMove.getTimeScaleBySpeed();
+
+					Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed);
+					targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * (Time.deltaTime * timeScale));			
+				}
+
+				if(moveSpeed <= 0)
+				{
+					releasePower = 0;
+				}
+			}
 		}
 	}
 
 	public bool isMoveEnd()
 	{
-		if(target.transform.position.Equals( controlPath[1]))
-		{
-			return true;
-		}
+		bool isEnd = (releasePower == 0);
 
-		return false;
+		isEnd = (path.Count == 0);
+
+		return isEnd;
 	}
 }
 
+public class rotateUpdateHelper
+{
+	static string input_key_left = "left";
+	static string input_key_right = "right";
+
+	public Transform transf;
+	public float rotateSpeed = 1f;
+
+	bool isPressedKeyDetected = false;
+	bool isRightKeyPressed = false;
+
+
+	public void Update()
+	{
+		handleKeyboardButton();
+		doRotate();
+	}
+
+	void handleKeyboardButton(){
+		if(Input.GetKeyDown(input_key_right) || Input.GetKeyDown(input_key_left))
+		{
+			if(!isPressedKeyDetected)
+			{
+				isPressedKeyDetected = true;
+				isRightKeyPressed= Input.GetKeyDown(input_key_right);
+				Debug.Log("" + (isRightKeyPressed?"right":"Left") + " key was pressed");
+			}
+		}else{
+			//check release
+			if(isPressedKeyDetected)
+			{
+				if(isRightKeyPressed && Input.GetKeyUp(input_key_right)){
+					isPressedKeyDetected = false;
+					Debug.Log("right key was released");
+				}else if(Input.GetKeyUp(input_key_left)){
+					isPressedKeyDetected = false;
+					Debug.Log("left key was released");
+				}
+			}
+		}	
+	}
+
+	void doRotate()
+	{
+		if(isPressedKeyDetected)
+		{
+			float angle = 0;
+			angle =(isRightKeyPressed)? rotateSpeed: -rotateSpeed;
+			transf.Rotate(Vector3.up,angle);
+		}
+	}
+}
 
 public class KnockBackHelper : MonoBehaviour {
 
 	public float radius_explode = 5.0F;
 	public bool doExplode = false;
 	public float speedUpDuration = 0.2F;
+
+	int playerindex = 0;
+	controller_keyboard curMappedController;
 
 	float power = 0F;
 	float upWard = 0F;
@@ -46,25 +288,40 @@ public class KnockBackHelper : MonoBehaviour {
 	SpeedUnit myMove;
 
 	MoveUpdateHelper myMoveUpdate;
+	rotateUpdateHelper myRotateUpdate;
+	Rigidbody rb;
+
+	//turn handling parameter
+	bool onRotate;
 
 	// Use this for initialization
 	void Start () {
 		doExplode = false;
 		startPos = transform.position;
 //		myMove = new SpeedUnit();
+
+		curMappedController = new controller_keyboard();
+		rb = GetComponent<Rigidbody>();
+
+		if(myMoveUpdate == null && rb != null)
+		{
+			myMoveUpdate = new MoveUpdateHelper();
+			myMoveUpdate.Set_Rigid(rb);
+			myMoveUpdate.Set_ChargablePower( gameObject.GetComponent<UnitProperty>().power_init );
+			myRotateUpdate = new rotateUpdateHelper();
+			myRotateUpdate.transf = transform;
+		}
 	}
 
 	public void doResetPostion()
 	{
-		{
-			GetComponent<Rigidbody>().isKinematic = true;
+		GetComponent<Rigidbody>().isKinematic = true;
 
-			Debug.Log(" doResetPostion to ? " + startPos);
-			transform.position = startPos;
-			transform.rotation = Quaternion.AngleAxis(0F , Vector3.up);
+		Debug.Log(" doResetPostion to ? " + startPos);
+		transform.position = startPos;
+		transform.rotation = Quaternion.AngleAxis(0F , Vector3.up);
 
-			GetComponent<Rigidbody>().isKinematic = false;
-		}
+		GetComponent<Rigidbody>().isKinematic = false;
 	}
 	
 	// Update is called once per frame
@@ -74,17 +331,18 @@ public class KnockBackHelper : MonoBehaviour {
 			doExplodionKnockBackWithTween( GameObject.FindGameObjectWithTag("Item") , 300F );
 			doExplode = false;
 		}
-
-		if(myMoveUpdate != null)
-		{
-			myMoveUpdate.Update();
-			if(myMoveUpdate.isMoveEnd())
-			{
-				myMoveUpdate = null;	
-			}
-		}
-
+			
 		DrawDebugline();
+	}
+
+	void FixedUpdate() {
+		if(rb != null)
+		{
+			if(myMoveUpdate != null)
+				myMoveUpdate.Update();
+			if(myRotateUpdate != null)
+				myRotateUpdate.Update();
+		}
 	}
 
 	void OnDrawGizmosSelected() {
@@ -106,6 +364,11 @@ public class KnockBackHelper : MonoBehaviour {
 				Debug.DrawLine(transform.position, endPoint, Color.red);	
 			}
 		}
+	}
+
+	public void setPlayerIndex(int setToIndex)
+	{
+		playerindex = setToIndex;
 	}
 
 	void doExplodionKnockBackWithPhysic(){
@@ -136,9 +399,6 @@ public class KnockBackHelper : MonoBehaviour {
 
 		if(deltaPosition != Vector3.zero)
 		{
-//			deltaPosition.x += gameObject.transform.position.x;
-//			deltaPosition.z += gameObject.transform.position.z;
-
 			Debug.Log("("+gameObject.name+") kockBack by ("+ by_target.name+ ") to " + deltaPosition );
 			doMoveToPosition(deltaPosition);
 
@@ -192,9 +452,7 @@ public class KnockBackHelper : MonoBehaviour {
 
 		return dist_out;
 	}
-
-
-
+		
 	public float GetCurrentMoveSpeed()
 	{
 		return myMove.getCurSpeed();

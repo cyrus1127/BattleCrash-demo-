@@ -28,7 +28,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _ColorMask: 15
-    - _Cutoff: 0.001
+    - _Cutoff: 0.76
     - _Shininess: 1
     - _Stencil: 0
     - _StencilComp: 4.78

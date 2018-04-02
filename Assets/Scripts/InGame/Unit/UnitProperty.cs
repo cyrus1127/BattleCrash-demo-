@@ -33,11 +33,32 @@ public class UnitProperty : MonoBehaviour {
 	AngleProvidor myAngleProvidor;
 	BuffType curBuffType;
 	UnitState state;
-	GameBoard delegate_board;
 
+	GameObject body;
+	GameObject particle;
+	GameObject weaponHolder;
+	Rigidbody rb;
+
+
+	GameBoard delegate_board;
 
 	bool onMove_AI;
 	public bool debug_onMove_AI = false;
+
+	enum ChildIndex
+	{
+		body = 0,
+		particleEffect = 1,
+		totalChildCount
+	};
+
+	enum inBodyChildIndex
+	{
+		point = 0,
+		coolDownBar = 1,
+		weaponHolder = 2,
+		totalChildCount
+	}
 
 	public enum UnitState
 	{
@@ -61,7 +82,24 @@ public class UnitProperty : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		barHanders = gameObject.GetComponentsInChildren<AttachBarHandler>();
+
+		if(transform.childCount == (int)UnitProperty.ChildIndex.totalChildCount)
+		{
+			Debug.Log(@"is using version 2 unit perfab!");
+			body = transform.GetChild( (int)ChildIndex.body ).gameObject;
+
+		}else{
+			Debug.Log(@"is using version 1 unit.");
+			body = gameObject;
+			rb = GetComponent<Rigidbody>();
+		}
+		particle = transform.GetChild( (int)ChildIndex.particleEffect ).gameObject;
+		if(body != null)
+		{
+			barHanders = body.GetComponentsInChildren<AttachBarHandler>();	
+			weaponHolder = body.transform.GetChild( (int)inBodyChildIndex.weaponHolder ).gameObject;
+		}
+
 
 		isReadyToAttack = true;
 		coolDownTimeCount = coolDownTime_normalAttack;
@@ -107,6 +145,9 @@ public class UnitProperty : MonoBehaviour {
 		{
 			//do we need to do attack ??
 		}
+			
+
+
 	}
 
 	/// <summary>
