@@ -83,6 +83,7 @@ public class MoveUpdateHelper
 
 	List<Vector3> path; // reference to the path
 	Rigidbody targetRigid;
+	GameObject explosionCube;
 	SpeedUnit myMove;
 	bool isPressedKeyDetected = false;
 	float targetMaxCharge = 10F;
@@ -101,6 +102,11 @@ public class MoveUpdateHelper
 
 		if(myMove == null)
 			myMove = new SpeedUnit();
+	}
+
+	public void Set_ExplosionCube(GameObject ec)
+	{
+		explosionCube = ec;
 	}
 
 	public void AddPath(Vector3 n_path)
@@ -138,7 +144,8 @@ public class MoveUpdateHelper
 				Debug.Log("fire key was pressed");
 			}
 
-		}else if(Input.GetKeyUp(input_key_fire)){
+		}
+		if(Input.GetKeyUp(input_key_fire)){
 			if(isPressedKeyDetected)
 			{
 				isPressedKeyDetected = false;
@@ -156,13 +163,25 @@ public class MoveUpdateHelper
 	{
 		if(isPressedKeyDetected)
 		{
-			chargedPower += targetMaxCharge * 0.1f;
+			chargedPower += targetMaxCharge * (0.1f * Time.deltaTime );
 			if(chargedPower > targetMaxCharge)
 			{
 				chargedPower = targetMaxCharge;
 				Debug.Log("Power charged done");
 			}else{
-				Debug.Log("Power is charging");
+				float pctage = ((chargedPower/targetMaxCharge)*100);
+//				Debug.Log("Power is charging ("+ pctage +")");
+
+				//update explosion cube position
+				if(explosionCube != null)
+				{
+					float max_distance = 10f;
+					float z_distance = targetRigid.transform.localScale.z/2 + (max_distance - (max_distance/100 * pctage));
+					Vector3 n_localPostion = targetRigid.transform.localPosition;
+					n_localPostion += (targetRigid.transform.forward * -(z_distance + explosionCube.transform.localScale.z));
+					Debug.Log("Power is charging ("+ pctage +") , z = " + n_localPostion.z);
+					explosionCube.transform.localPosition = n_localPostion;	
+				}
 			}
 		}
 	}
@@ -196,8 +215,24 @@ public class MoveUpdateHelper
 				if(moveSpeed > 0){
 					float timeScale = myMove.getTimeScaleBySpeed();
 
-					Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed);
-					targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * (Time.deltaTime * timeScale));			
+					Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed + " , releasePower ? " + releasePower);
+
+					if(false)
+					{
+						targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * (Time.deltaTime * timeScale));
+					}else{
+						moveSpeed = 0;// set 0, as power released	
+
+						if(explosionCube != null)
+						{
+							float z_distance = 10; //releasePower effect
+
+							if(explosionCube.GetComponent<Rigidbody>() && targetRigid != null)
+							{
+								targetRigid.AddExplosionForce(targetMaxCharge,explosionCube.transform.localPosition, z_distance, 1.0f , ForceMode.Impulse );
+							}
+						}
+					}
 				}
 
 				if(moveSpeed <= 0)
@@ -228,7 +263,6 @@ public class rotateUpdateHelper
 
 	bool isPressedKeyDetected = false;
 	bool isRightKeyPressed = false;
-
 
 	public void Update()
 	{
@@ -280,8 +314,8 @@ public class KnockBackHelper : MonoBehaviour {
 	int playerindex = 0;
 	controller_keyboard curMappedController;
 
-	float power = 0F;
-	float upWard = 0F;
+	public float power = 0F;
+	public float upWard = 1F;
 
 	Vector3 startPos;
 	iTween cur_tween;
@@ -290,6 +324,7 @@ public class KnockBackHelper : MonoBehaviour {
 	MoveUpdateHelper myMoveUpdate;
 	rotateUpdateHelper myRotateUpdate;
 	Rigidbody rb;
+	public GameObject explosionCube_prefab;
 
 	//turn handling parameter
 	bool onRotate;
@@ -305,11 +340,15 @@ public class KnockBackHelper : MonoBehaviour {
 
 		if(myMoveUpdate == null && rb != null)
 		{
-			myMoveUpdate = new MoveUpdateHelper();
-			myMoveUpdate.Set_Rigid(rb);
-			myMoveUpdate.Set_ChargablePower( gameObject.GetComponent<UnitProperty>().power_init );
-			myRotateUpdate = new rotateUpdateHelper();
-			myRotateUpdate.transf = transform;
+			if(gameObject.GetComponent<UnitProperty>()!= null)
+			{
+				myMoveUpdate = new MoveUpdateHelper();
+				myMoveUpdate.Set_Rigid(rb);
+				myMoveUpdate.Set_ExplosionCube(explosionCube_prefab);
+				myMoveUpdate.Set_ChargablePower( gameObject.GetComponent<UnitProperty>().power_init );
+				myRotateUpdate = new rotateUpdateHelper();
+				myRotateUpdate.transf = transform;
+			}
 		}
 	}
 
