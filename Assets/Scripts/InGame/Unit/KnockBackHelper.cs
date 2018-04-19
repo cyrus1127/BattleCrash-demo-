@@ -84,15 +84,18 @@ public class MoveUpdateHelper
 	List<Vector3> path; // reference to the path
 	Rigidbody targetRigid;
 	GameObject explosionCube;
+	WeaponController weapon;
 	SpeedUnit myMove;
 	bool isPressedKeyDetected = false;
 	float targetMaxCharge = 10F;
 	float chargedPower = 0;
 	float releasePower = 0;
+	float chargeDuration = 1F;
 
-	public void Set_ChargablePower(float in_power)
+	public void Set_ChargablePower(float in_power , float in_duration)
 	{
 		targetMaxCharge = in_power;
+		chargeDuration = in_duration;
 	}
 
 	public void Set_Rigid(Rigidbody rb)
@@ -107,6 +110,11 @@ public class MoveUpdateHelper
 	public void Set_ExplosionCube(GameObject ec)
 	{
 		explosionCube = ec;
+	}
+
+	public void Set_WeapanHelp(WeaponController wc)
+	{
+		weapon = wc;
 	}
 
 	public void AddPath(Vector3 n_path)
@@ -170,17 +178,20 @@ public class MoveUpdateHelper
 				Debug.Log("Power charged done");
 			}else{
 				float pctage = ((chargedPower/targetMaxCharge)*100);
-//				Debug.Log("Power is charging ("+ pctage +")");
+				Debug.Log("Power is charging ("+ pctage +")");
 
 				//update explosion cube position
 				if(explosionCube != null)
 				{
 					float max_distance = 10f;
 					float z_distance = targetRigid.transform.localScale.z/2 + (max_distance - (max_distance/100 * pctage));
+					z_distance = targetRigid.transform.localScale.z/2; // test
 					Vector3 n_localPostion = targetRigid.transform.localPosition;
 					n_localPostion += (targetRigid.transform.forward * -(z_distance + explosionCube.transform.localScale.z));
-					Debug.Log("Power is charging ("+ pctage +") , z = " + n_localPostion.z);
+
+					//set to cube
 					explosionCube.transform.localPosition = n_localPostion;	
+					explosionCube.transform.localRotation = targetRigid.transform.localRotation;
 				}
 			}
 		}
@@ -194,8 +205,18 @@ public class MoveUpdateHelper
 		if(releasePower > 0)
 		{
 			//setUp speedUtil
-			float total_distance = (releasePower * 60F * 0.8F);
-			myMove.setTarget(releasePower,total_distance,2);	
+			if(explosionCube == null)
+			{
+				float total_distance = (releasePower * 60F * 0.8F);
+				myMove.setTarget(releasePower,total_distance,chargeDuration);	
+			}else{
+				//if explosionCube is here, the speedUnit will no need
+				if(weapon != null)
+				{
+					weapon.Action_attack_rotate( 360F*3, 1.5F );
+				}
+			}
+
 		}
 	}
 
@@ -210,34 +231,29 @@ public class MoveUpdateHelper
 		}else{
 			if(releasePower > 0)
 			{
-				float moveSpeed = myMove.UpdateSpeed(Time.deltaTime); //get speed
-
-				if(moveSpeed > 0){
-					float timeScale = myMove.getTimeScaleBySpeed();
-
-					Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed + " , releasePower ? " + releasePower);
-
-					if(false)
-					{
-						targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * (Time.deltaTime * timeScale));
-					}else{
-						moveSpeed = 0;// set 0, as power released	
-
-						if(explosionCube != null)
-						{
-							float z_distance = 10; //releasePower effect
-
-							if(explosionCube.GetComponent<Rigidbody>() && targetRigid != null)
-							{
-								targetRigid.AddExplosionForce(targetMaxCharge,explosionCube.transform.localPosition, z_distance, 1.0f , ForceMode.Impulse );
-							}
-						}
-					}
-				}
-
-				if(moveSpeed <= 0)
+				float moveSpeed = 0;
+				if(explosionCube == null)
 				{
-					releasePower = 0;
+					moveSpeed = myMove.UpdateSpeed(Time.deltaTime); //get speed
+					if(moveSpeed > 0){
+						float timeScale = myMove.getTimeScaleBySpeed();
+
+						Debug.Log("onMoveUpdate moveSpeed? " + moveSpeed + " , releasePower ? " + releasePower);
+						targetRigid.MovePosition(targetRigid.transform.position + targetRigid.transform.forward * (Time.deltaTime * timeScale));
+					}
+
+					if(moveSpeed <= 0)
+					{
+						releasePower = 0;
+					}
+				}else{
+					float z_distance = 5; //releasePower effect
+
+					if(targetRigid != null)
+					{
+						targetRigid.AddExplosionForce(targetMaxCharge,explosionCube.transform.localPosition, z_distance, 0F , ForceMode.Impulse );
+						releasePower = 0;
+					}
 				}
 			}
 		}
@@ -245,11 +261,21 @@ public class MoveUpdateHelper
 
 	public bool isMoveEnd()
 	{
-		bool isEnd = (releasePower == 0);
+		if(explosionCube == null)
+		{
+			bool isEnd = (releasePower == 0);
 
-		isEnd = (path.Count == 0);
+			isEnd = (path.Count == 0);
 
-		return isEnd;
+			return isEnd;
+		}else{
+			if(targetRigid != null)
+			{
+				
+			}
+		}
+
+		return true;
 	}
 }
 
@@ -259,7 +285,7 @@ public class rotateUpdateHelper
 	static string input_key_right = "right";
 
 	public Transform transf;
-	public float rotateSpeed = 1f;
+	public float rotateSpeed = 2.5f;
 
 	bool isPressedKeyDetected = false;
 	bool isRightKeyPressed = false;
@@ -279,14 +305,18 @@ public class rotateUpdateHelper
 				isRightKeyPressed= Input.GetKeyDown(input_key_right);
 				Debug.Log("" + (isRightKeyPressed?"right":"Left") + " key was pressed");
 			}
-		}else{
+		}
+
+		if(Input.GetKeyUp(input_key_right) || Input.GetKeyUp(input_key_left)){
 			//check release
 			if(isPressedKeyDetected)
 			{
 				if(isRightKeyPressed && Input.GetKeyUp(input_key_right)){
 					isPressedKeyDetected = false;
 					Debug.Log("right key was released");
-				}else if(Input.GetKeyUp(input_key_left)){
+				}
+
+				if(!isRightKeyPressed && Input.GetKeyUp(input_key_left)){
 					isPressedKeyDetected = false;
 					Debug.Log("left key was released");
 				}
@@ -309,6 +339,7 @@ public class KnockBackHelper : MonoBehaviour {
 
 	public float radius_explode = 5.0F;
 	public bool doExplode = false;
+	public bool testExplode = false;
 	public float speedUpDuration = 0.2F;
 
 	int playerindex = 0;
@@ -323,6 +354,7 @@ public class KnockBackHelper : MonoBehaviour {
 
 	MoveUpdateHelper myMoveUpdate;
 	rotateUpdateHelper myRotateUpdate;
+	WeaponController myWeapon;
 	Rigidbody rb;
 	public GameObject explosionCube_prefab;
 
@@ -337,6 +369,7 @@ public class KnockBackHelper : MonoBehaviour {
 
 		curMappedController = new controller_keyboard();
 		rb = GetComponent<Rigidbody>();
+		myWeapon = gameObject.GetComponentInChildren<WeaponController>();
 
 		if(myMoveUpdate == null && rb != null)
 		{
@@ -345,7 +378,9 @@ public class KnockBackHelper : MonoBehaviour {
 				myMoveUpdate = new MoveUpdateHelper();
 				myMoveUpdate.Set_Rigid(rb);
 				myMoveUpdate.Set_ExplosionCube(explosionCube_prefab);
-				myMoveUpdate.Set_ChargablePower( gameObject.GetComponent<UnitProperty>().power_init );
+				myMoveUpdate.Set_ChargablePower( gameObject.GetComponent<UnitProperty>().power_init , gameObject.GetComponent<UnitProperty>().speedUpDuration_init );
+				if(myWeapon != null)
+					myMoveUpdate.Set_WeapanHelp(myWeapon);
 				myRotateUpdate = new rotateUpdateHelper();
 				myRotateUpdate.transf = transform;
 			}
@@ -367,8 +402,18 @@ public class KnockBackHelper : MonoBehaviour {
 	void Update () {
 		if(doExplode)
 		{
-			doExplodionKnockBackWithTween( GameObject.FindGameObjectWithTag("Item") , 300F );
+			
 			doExplode = false;
+
+			//Debug
+			if(testExplode){
+				foreach(GameObject ob in GameObject.FindGameObjectsWithTag("Unit"))
+				{
+					ob.GetComponent<Rigidbody>().AddExplosionForce(power,gameObject.transform.position,radius_explode,0F,ForceMode.Impulse);
+				}
+			}else{
+				doExplodionKnockBackWithTween( GameObject.FindGameObjectWithTag("Item") , 300F );
+			}
 		}
 			
 		DrawDebugline();
