@@ -5,6 +5,8 @@ using UnityEngine;
 public class WeaponController :MonoBehaviour {
 
 	public bool test = false;
+	public bool isClockRite = false;
+	public bool isLoop = false;
 
 	void Start() {
 		
@@ -16,7 +18,7 @@ public class WeaponController :MonoBehaviour {
 		{
 			test = false;
 
-			Action_attack_rotate((360F * 5) , 2.3F);
+			Action_attack_rotate((360F * 5), 2.3F);
 		}
 
 	}
@@ -28,7 +30,16 @@ public class WeaponController :MonoBehaviour {
 
 	public void Action_attack_rotate(float total_angle, float actionDuration)
 	{
-		Hashtable tweenInfo = iTween.Hash("y",(total_angle/360F),"loopType", "none","time",actionDuration,"oncomplete","ActionEnd","oncompletetarget",gameObject);
+		{//reset rotation
+			gameObject.transform.Rotate( Vector3.zero );
+		}
+
+		float angle = ((total_angle/360F)*(isClockRite ? -1 : 1));
+		Hashtable tweenInfo;
+		if(isLoop)
+			tweenInfo = iTween.Hash("y",angle,"loopType", "loop","time",actionDuration);
+		else
+			tweenInfo = iTween.Hash("y",angle,"loopType", "none","time",actionDuration,"oncomplete","ActionEnd","oncompletetarget",gameObject);
 		iTween.RotateBy(gameObject,tweenInfo);	
 
 		showChild(true);
