@@ -98,83 +98,88 @@ public class AngleUnit
 		if( myObject != null )
 		{
 			myTransfrom = myObject.transform;
-			angle_base = 0F;
 			Vector3 oA = myTransfrom.position;
+			SetOopAdj(oA, oB);
+		}
+	}
 
-			angleInTan = 0F;
+	public void SetOopAdj(Vector3 oA , Vector3 oB)
+	{
+		//reset
+		angle_base = 0F;
+		angleInTan = 0F;
 
-			if(!oA.Equals(oB))
+		if(!oA.Equals(oB))
+		{
+			float opp = Mathf.Max(oA.z, oB.z) - Mathf.Min(oA.z,oB.z);
+			float adj = Mathf.Max(oA.x, oB.x) - Mathf.Min(oA.x,oB.x);
+
+			distance = Mathf.Sqrt( Mathf.Pow(opp , 2F) + Mathf.Pow(adj , 2F));
+
+			if(opp > 0.1 && adj > 0.1)
 			{
-				float opp = Mathf.Max(oA.z, oB.z) - Mathf.Min(oA.z,oB.z);
-				float adj = Mathf.Max(oA.x, oB.x) - Mathf.Min(oA.x,oB.x);
-
-				distance = Mathf.Sqrt( Mathf.Pow(opp , 2F) + Mathf.Pow(adj , 2F));
-
-				if(opp > 0.1 && adj > 0.1)
-				{
-					angleInTan = (Mathf.Atan(opp/adj)* Mathf.Rad2Deg);	
-				}
-				if(oA.z != oB.z || oA.x != oB.x)
-				{
-					if(opp < 0.1 || adj < 0.1){
-						if(adj < 0.1){
-							if(oA.z < oB.z){
-								angle_base = 0F ;
-								angle_refact = 180F;
-								directionTended = TendDirection.up ;
-								directionRefact = TendDirection.down;
-							}else if(oA.z > oB.z){
-								angle_base = 180F ;
-								angle_refact = 0F;
-								directionTended = TendDirection.down ;
-								directionRefact = TendDirection.up;
-							}
-						}else if(opp < 0.1){
-							if(oA.x < oB.x){
-								angle_base = 90F;
-								angle_refact = 270F;
-								directionTended =  TendDirection.right ;
-								directionRefact = TendDirection.left;
-							}else if(oA.x > oB.x){
-								angle_base = 270F;
-								angle_refact = 90F;
-								directionTended = TendDirection.left ;
-								directionRefact = TendDirection.right;
-							}
+				angleInTan = (Mathf.Atan(opp/adj)* Mathf.Rad2Deg);	
+			}
+			if(oA.z != oB.z || oA.x != oB.x)
+			{
+				if(opp < 0.1 || adj < 0.1){
+					if(adj < 0.1){
+						if(oA.z < oB.z){
+							angle_base = 0F ;
+							angle_refact = 180F;
+							directionTended = TendDirection.up ;
+							directionRefact = TendDirection.down;
+						}else if(oA.z > oB.z){
+							angle_base = 180F ;
+							angle_refact = 0F;
+							directionTended = TendDirection.down ;
+							directionRefact = TendDirection.up;
 						}
-					}else if(oA.x < oB.x){ //target on right
-						float _base = 90F;
-						float _refact = 270F;
-						if(oA.z < oB.z){ //target on top
-							angle_base = _base - angleInTan;
-							angle_refact = _refact - angleInTan;
-							directionTended = TendDirection.upright ;
-							directionRefact = TendDirection.downleft;
-						}else if(oA.z > oB.z){ //target on down
-							angle_base = _base + angleInTan;
-							angle_refact = _refact + angleInTan;
-							directionTended = TendDirection.downright ;
-							directionRefact = TendDirection.upleft;
-						}
-					}else if(oA.x > oB.x){ // target on left
-						float _base = 270F;
-						float _refact = 90F;
-						if(oA.z < oB.z){ //target on top
-							angle_base = _base + angleInTan;
-							angle_refact = _refact + angleInTan;
-							directionTended = TendDirection.upleft ;
-							directionRefact = TendDirection.downright;
-						}else if(oA.z > oB.z){ //target on down
-							angle_base = _base - angleInTan;
-							angle_refact = _refact - angleInTan;
-							directionTended = TendDirection.downleft ;
-							directionRefact = TendDirection.upright;
+					}else if(opp < 0.1){
+						if(oA.x < oB.x){
+							angle_base = 90F;
+							angle_refact = 270F;
+							directionTended =  TendDirection.right ;
+							directionRefact = TendDirection.left;
+						}else if(oA.x > oB.x){
+							angle_base = 270F;
+							angle_refact = 90F;
+							directionTended = TendDirection.left ;
+							directionRefact = TendDirection.right;
 						}
 					}
+				}else if(oA.x < oB.x){ //target on right
+					float _base = 90F;
+					float _refact = 270F;
+					if(oA.z < oB.z){ //target on top
+						angle_base = _base - angleInTan;
+						angle_refact = _refact - angleInTan;
+						directionTended = TendDirection.upright ;
+						directionRefact = TendDirection.downleft;
+					}else if(oA.z > oB.z){ //target on down
+						angle_base = _base + angleInTan;
+						angle_refact = _refact + angleInTan;
+						directionTended = TendDirection.downright ;
+						directionRefact = TendDirection.upleft;
+					}
+				}else if(oA.x > oB.x){ // target on left
+					float _base = 270F;
+					float _refact = 90F;
+					if(oA.z < oB.z){ //target on top
+						angle_base = _base + angleInTan;
+						angle_refact = _refact + angleInTan;
+						directionTended = TendDirection.upleft ;
+						directionRefact = TendDirection.downright;
+					}else if(oA.z > oB.z){ //target on down
+						angle_base = _base - angleInTan;
+						angle_refact = _refact - angleInTan;
+						directionTended = TendDirection.downleft ;
+						directionRefact = TendDirection.upright;
+					}
 				}
-//				Debug.Log("A("+oA.x+","+oA.z+")  B("+oB.x+","+oB.z+")");
-//				Debug.Log(" target in "+ directionTended+" , refact"+ directionRefact );
 			}
+			//				Debug.Log("A("+oA.x+","+oA.z+")  B("+oB.x+","+oB.z+")");
+//							Debug.Log(" target in "+ directionTended+" , refact"+ directionRefact );
 		}
 	}
 

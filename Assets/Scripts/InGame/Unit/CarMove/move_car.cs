@@ -15,6 +15,7 @@ public class move_car : MonoBehaviour {
 
 	RotateUpdateHelper myRotateUpdate;
 	public SimpleTouchController leftController;
+	AngleUnit myAngle;
 
 	// Use this for initialization
 	void Start () {
@@ -24,6 +25,8 @@ public class move_car : MonoBehaviour {
 
 			myRotateUpdate = new RotateUpdateHelper();
 			myRotateUpdate.transf = transform;
+
+			myAngle = new AngleUnit();
 		}
 	}
 	
@@ -79,7 +82,8 @@ public class move_car : MonoBehaviour {
 
 //				moveSpeed -= onHitDrag_wall;
 				{
-					moveSpeed = maxSpeed * 0.25F;
+//					moveSpeed = maxSpeed * 0.25F;
+					moveSpeed = 0;
 				}
 
 				if(onHit_speedRecoverDelay <= 0)
@@ -104,20 +108,59 @@ public class move_car : MonoBehaviour {
 	//Control
 	void RotatePlayerByController()
 	{
+		myAngle.SetOopAdj( Vector3.zero , new Vector3(leftController.GetTouchPosition.x,0,leftController.GetTouchPosition.y) );
+
 		if(leftController.GetTouchPosition.x != 0 && myRotateUpdate != null)
 		{
-			if(leftController.GetTouchPosition.x > 0) // right
+			float angle =  0;
 			{
-				myRotateUpdate.setIsRightKeyPressed(true);
-			}else if(leftController.GetTouchPosition.x < 0)// left
-			{
-				myRotateUpdate.setIsRightKeyPressed(false);
-			}	
+				if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.downleft ||
+					myAngle.getCurrentDirection() == AngleUnit.TendDirection.upleft ||
+					myAngle.getCurrentDirection() == AngleUnit.TendDirection.left)
+				{
+					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.left)
+						angle = 270;
+					else{
+						if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.upleft)
+						{
+							angle = myAngle.getCurrentAngle() + 270;
+						}else{
+							angle = (myAngle.getCurrentAngle() - 270) * -1;		
+						}
+					}
+				}else if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.downright ||
+					myAngle.getCurrentDirection() == AngleUnit.TendDirection.upright ||
+					myAngle.getCurrentDirection() == AngleUnit.TendDirection.right)
+				{
+					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.right)
+						angle = 90;
+					else{
+						if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.upright)
+						{
+							angle = (myAngle.getCurrentAngle() - 90) * -1;
+						}else{
+							angle = myAngle.getCurrentAngle() + 90;		
+						}
+					}
+				}else{
+					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.up)
+					{
+						angle = 0;
+					}else{
+						angle = 180;		
+					}
+				}
+					
+				if(angle > 360)
+					angle %= 360;
+//				Debug.Log("angle ? " + angle);
+			}
 
-			myRotateUpdate.setIsPressedKeyDetected(true);
+			myRotateUpdate.doRotateByAngle(angle);
 		}else{
 			myRotateUpdate.setIsPressedKeyDetected(false);
 		}
 
 	}
+
 }

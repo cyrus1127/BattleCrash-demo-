@@ -57,6 +57,37 @@ public class RotateUpdateHelper
 		}
 	}
 
+	public void doRotateByAngle(float in_angle)
+	{
+		float out_angle;
+		Vector3 ax;
+		transf.rotation.ToAngleAxis(out out_angle,out ax);
+
+		if(ax.y < 0)
+			out_angle = 360 - out_angle;
+		
+		if( in_angle != out_angle )
+		{
+			bool isRight = (in_angle > out_angle);
+
+			float dist_1 = Mathf.Max(in_angle,out_angle) - Mathf.Min(in_angle,out_angle);
+			float dist_2 = (360F - Mathf.Max(in_angle,out_angle)) + Mathf.Min(in_angle,out_angle);
+			if(isRight && dist_1 > 180)
+			{
+				isRight = false;
+			}else if(!isRight && dist_1 > 180)
+			{
+				isRight = true;
+			}
+
+//			Debug.Log("in_angle" +in_angle+ " , out_angle" +out_angle+   ", dist_1 ? " + dist_1 + ", ax : " + ax );
+
+			setIsRightKeyPressed(isRight);
+			setIsPressedKeyDetected(true);
+
+		}
+	}
+
 	public void setIsRightKeyPressed(bool isRight){
 		isRightKeyPressed = isRight;
 	}
