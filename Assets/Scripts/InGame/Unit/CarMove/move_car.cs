@@ -16,6 +16,7 @@ public class move_car : MonoBehaviour {
 	RotateUpdateHelper myRotateUpdate;
 	public SimpleTouchController leftController;
 	AngleUnit myAngle;
+	AngleUnit angleChecker;
 
 	// Use this for initialization
 	void Start () {
@@ -27,6 +28,8 @@ public class move_car : MonoBehaviour {
 			myRotateUpdate.transf = transform;
 
 			myAngle = new AngleUnit();
+			angleChecker = new AngleUnit();
+			angleChecker.myObject = gameObject;
 		}
 	}
 	
@@ -59,6 +62,8 @@ public class move_car : MonoBehaviour {
 			{
 				float speed_to_add = (((deltaTime * 1000) * (maxSpeed/(speedUpDurations_sec*1000))) /1000);
 				speed_to_add = 1;
+				if(moveSpeed < maxSpeed/3)
+					speed_to_add = 10;
 				if(moveSpeed + speed_to_add > maxSpeed)
 				{
 					moveSpeed = maxSpeed;
@@ -73,22 +78,28 @@ public class move_car : MonoBehaviour {
 	{
 		if(collisionInfo.gameObject.tag == "wall")
 		{
-
-			if(moveSpeed == 0)
+			if(moveSpeed > 0)
 			{
-				
-			}else{
-				Debug.Log("on hit wall");
-
-//				moveSpeed -= onHitDrag_wall;
+				bool isFaceToTarget = false;
+				int layerMask = 1 << 8;
+				layerMask = ~layerMask;
+				RaycastHit hit;
+				// Does the ray intersect any objects excluding the player layer
+				if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, layerMask))
 				{
-//					moveSpeed = maxSpeed * 0.25F;
-					moveSpeed = 0;
+					Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
+					Debug.Log("Did Hit");
+					isFaceToTarget = true;
 				}
 
-				if(onHit_speedRecoverDelay <= 0)
+				Debug.Log("on hit wall");
+				if(isFaceToTarget)
 				{
-					onHit_speedRecoverDelay = 1;	
+					moveSpeed = 0;	
+//					if(onHit_speedRecoverDelay <= 0)
+//					{
+//						onHit_speedRecoverDelay = 1;	
+//					}
 				}
 			}
 		}
@@ -100,8 +111,39 @@ public class move_car : MonoBehaviour {
 	}
 
 	void moveBack( Collision collisionInfo ){
-		moveSpeed = 0;
-		myRig.AddExplosionForce(250, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);
+
+//		angleChecker.setTarget(collisionInfo.transform);
+
+		bool isFaceToTarget = false;
+		{//check angle
+//			float colliedObjectAngle =  angleChecker.getTranslatedCompleteAngle(angleChecker.getCurrentDirection(), angleChecker.getCurrentAngle());
+//			float mixAngle_left = 0;
+//			float mixAngle_right = 0;
+
+			float out_angle;
+			Vector3 ax;
+			{//get current angle
+				transform.rotation.ToAngleAxis(out out_angle,out ax);
+				if(ax.y < 0)
+					out_angle = 360 - out_angle;	
+			}
+
+			int layerMask = 1 << 8;
+			layerMask = ~layerMask;
+			RaycastHit hit;
+			// Does the ray intersect any objects excluding the player layer
+			if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, layerMask))
+			{
+				Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
+				Debug.Log("Did Hit");
+				isFaceToTarget = true;
+			}
+		}
+
+		if(!isFaceToTarget){
+			moveSpeed = 0;
+			myRig.AddExplosionForce(250, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);	
+		}
 	}
 
 
@@ -112,49 +154,7 @@ public class move_car : MonoBehaviour {
 
 		if(leftController.GetTouchPosition.x != 0 && myRotateUpdate != null)
 		{
-			float angle =  0;
-			{
-				if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.downleft ||
-					myAngle.getCurrentDirection() == AngleUnit.TendDirection.upleft ||
-					myAngle.getCurrentDirection() == AngleUnit.TendDirection.left)
-				{
-					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.left)
-						angle = 270;
-					else{
-						if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.upleft)
-						{
-							angle = myAngle.getCurrentAngle() + 270;
-						}else{
-							angle = (myAngle.getCurrentAngle() - 270) * -1;		
-						}
-					}
-				}else if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.downright ||
-					myAngle.getCurrentDirection() == AngleUnit.TendDirection.upright ||
-					myAngle.getCurrentDirection() == AngleUnit.TendDirection.right)
-				{
-					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.right)
-						angle = 90;
-					else{
-						if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.upright)
-						{
-							angle = (myAngle.getCurrentAngle() - 90) * -1;
-						}else{
-							angle = myAngle.getCurrentAngle() + 90;		
-						}
-					}
-				}else{
-					if(myAngle.getCurrentDirection() == AngleUnit.TendDirection.up)
-					{
-						angle = 0;
-					}else{
-						angle = 180;		
-					}
-				}
-					
-				if(angle > 360)
-					angle %= 360;
-//				Debug.Log("angle ? " + angle);
-			}
+			float angle =  myAngle.getTranslatedCompleteAngle(myAngle.getCurrentDirection(), myAngle.getCurrentAngle());
 
 			myRotateUpdate.doRotateByAngle(angle);
 		}else{
@@ -162,5 +162,6 @@ public class move_car : MonoBehaviour {
 		}
 
 	}
+
 
 }

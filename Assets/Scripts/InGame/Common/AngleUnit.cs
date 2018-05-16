@@ -82,6 +82,53 @@ public class AngleUnit
 	public TendDirection getCurrentRefactDirection(){ return directionRefact;}
 	public float getCurrentAngle(){ return angleInTan;}
 	public float getCurrentAngleBase(){ return angle_base;}
+	public float getTranslatedCompleteAngle(AngleUnit.TendDirection inDirection, float inAngle)
+	{
+		float angle =  0;
+		{
+			if(inDirection == AngleUnit.TendDirection.downleft ||
+				inDirection == AngleUnit.TendDirection.upleft ||
+				inDirection == AngleUnit.TendDirection.left)
+			{
+				if(inDirection == AngleUnit.TendDirection.left)
+					angle = 270;
+				else{
+					if(inDirection == AngleUnit.TendDirection.upleft)
+					{
+						angle = inAngle + 270;
+					}else{
+						angle = (inAngle - 270) * -1;		
+					}
+				}
+			}else if(inDirection == AngleUnit.TendDirection.downright ||
+				inDirection == AngleUnit.TendDirection.upright ||
+				inDirection == AngleUnit.TendDirection.right)
+			{
+				if(inDirection == AngleUnit.TendDirection.right)
+					angle = 90;
+				else{
+					if(inDirection == AngleUnit.TendDirection.upright)
+					{
+						angle = (inAngle - 90) * -1;
+					}else{
+						angle = inAngle + 90;		
+					}
+				}
+			}else{
+				if(inDirection == AngleUnit.TendDirection.up)
+				{
+					angle = 0;
+				}else{
+					angle = 180;		
+				}
+			}
+
+			if(angle > 360)
+				angle %= 360;
+			//				Debug.Log("angle ? " + angle);
+		}
+		return angle;
+	}
 
 	public float GetAngleBaseMyPositionWithObject( Transform b_target , bool do_refact)
 	{
@@ -236,5 +283,7 @@ public class AngleUnit
 
 		return n_position;
 	}
+
+
 
 }
