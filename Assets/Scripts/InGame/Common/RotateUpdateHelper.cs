@@ -54,6 +54,7 @@ public class RotateUpdateHelper
 			float angle = 0;
 			angle =(isRightKeyPressed)? rotateSpeed: -rotateSpeed;
 			transf.Rotate(Vector3.up,angle);
+
 		}
 	}
 

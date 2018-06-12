@@ -106,7 +106,10 @@ public class move_car : MonoBehaviour {
 
 		if(collisionInfo.gameObject.tag == "Unit")
 		{
-			moveBack(collisionInfo);
+//			moveBack(collisionInfo);
+
+			//Do weapon show
+
 		}
 	}
 
@@ -162,6 +165,5 @@ public class move_car : MonoBehaviour {
 		}
 
 	}
-
 
 }

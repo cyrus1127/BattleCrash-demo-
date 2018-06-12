@@ -5,9 +5,9 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/test_explone.unity
-    guid: ef426c5e59fd7485d8780bc966fa8be3
   - enabled: 1
-    path: Assets/Scenes/test_MoveLikeCar.unity
+    path: Assets/Scenes/HomeScene.unity
+    guid: 67a65822c544b4d01a1f86674b98e369
+  - enabled: 1
+    path: Assets/Scenes/Test_scences/test_MoveLikeCar.unity
     guid: 981ca08fc70fd4b2caa89262540853eb
