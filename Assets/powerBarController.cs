@@ -7,15 +7,33 @@ public class powerBarController : MonoBehaviour {
 
 //	public float testBarSize = 50F;
 	float myWidth = 800F;
+	float currentSpeed = 0F;
 	public RectTransform contentBarTransf;
+	ParticleSystem myStateParticleEmitter;
+
+
+	void Awake()
+	{
+		if(contentBarTransf != null){
+			myStateParticleEmitter = contentBarTransf.GetComponentInChildren<ParticleSystem>();
+			myStateParticleEmitter.Stop();
+		}
+	}
 
 	void Update()
 	{
 //		UpdateBarProcess(testBarSize);
 	}
 
-	void UpdateBarProcess(float precetage)
+	public float CurrentSpeed()
 	{
+		return currentSpeed;
+	}
+
+	public void UpdateBarProcess(float precetage)
+	{
+		currentSpeed = precetage;
+
 		if(contentBarTransf != null)
 		{
 			float final_ptg = precetage;
@@ -37,9 +55,10 @@ public class powerBarController : MonoBehaviour {
 				img.color = Color.yellow;	
 			}else if(precetage >= 80){
 				img.color = Color.red;
-				Debug.Log("is red now");
-			}else 
-				img.color = Color.white;				
+			}else
+			{
+				img.color = Color.white;	
+			}
 		}
 	}
 }

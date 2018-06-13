@@ -671,7 +671,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f03df440f9834daf8132ce2f0d65036, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  test: 1
+  test: 0
   isClockRite: 1
   isLoop: 1
 --- !u!114 &114355215303382908
@@ -685,7 +685,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35aa24113ebf4fc18e137fb60260642, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeed: 8000
+  maxSpeed: 3000
   speedUpDurations_sec: 5
   moveSpeed: 0
   onHitDrag_wall: 5
@@ -704,7 +704,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f03df440f9834daf8132ce2f0d65036, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  test: 1
+  test: 0
   isClockRite: 0
   isLoop: 1
 --- !u!114 &114773931004351430

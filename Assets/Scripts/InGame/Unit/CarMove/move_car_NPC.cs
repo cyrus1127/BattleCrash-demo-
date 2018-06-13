@@ -7,6 +7,7 @@ public class move_car_NPC : MonoBehaviour {
 	Rigidbody myRig;
 
 	bool isSideTheWall = false;
+	bool isGameEnded = false;
 
 	public float maxSpeed = 0;
 	public float speedUpDurations_sec = 5;
@@ -19,26 +20,35 @@ public class move_car_NPC : MonoBehaviour {
 	string targetTagName = "Player";
 
 	// Use this for initialization
+
+	void Awake(){
+		GameObject new_target = GameObject.Find(targetTagName);
+		if(new_target != null)
+		{
+			myTarget = new_target;
+			Debug.Log("found GameObject in targetTagName("+ targetTagName +")");
+		}else{
+			Debug.Log("can't find GameObject in targetTagName("+ targetTagName +")");
+		}
+	}
+
 	void Start () {
 		if(myRig == null)
 		{
 			myRig = gameObject.GetComponent<Rigidbody>();
 		}
 
-		GameObject new_target = GameObject.FindGameObjectWithTag(targetTagName);
-		if(new_target != null)
-		{
-			myTarget = new_target;
-		}
+		//NPC init speed, dont let it be still too long
+		moveSpeed = maxSpeed / 100F * 25F;
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		if(myRig != null)
+		if(myRig != null && !isGameEnded)
 		{
 			myRig.AddRelativeForce(Vector3.forward * moveSpeed);
 
-			speedUp(Time.deltaTime);
+//			speedUp(Time.deltaTime);
 
 			if(myTarget != null)
 			{
@@ -67,9 +77,9 @@ public class move_car_NPC : MonoBehaviour {
 		}
 	}
 
-	public void moveBackBy( Collision collisionInfo ){
+	public void moveBackBy( Transform targetTranf , float in_power){
 		moveSpeed = 0;
-		myRig.AddExplosionForce(1000, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);
+		myRig.AddExplosionForce(in_power, targetTranf.localPosition , targetTranf.localScale.z * 2 , 0,ForceMode.Impulse);
 	}
 
 	void OnCollisionStay(Collision collisionInfo)
@@ -114,9 +124,19 @@ public class move_car_NPC : MonoBehaviour {
 		{
 			if(collisionInfo.gameObject.tag == "wall")
 			{
+				GameObject main = GameObject.Find("MainScript");
+				InGameLogic gameLogic = main.GetComponent<InGameLogic>();
+				gameLogic.NPCDestoried();
 
+				//do Destory myself
 				Destroy(gameObject);
 			}	
 		}
+	}
+
+	public void StopMove()
+	{
+		moveSpeed = 0;
+		isGameEnded = true;
 	}
 }

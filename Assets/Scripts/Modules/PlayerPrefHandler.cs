@@ -5,10 +5,16 @@ using UnityEngine;
 public class PlayerPrefHandler{
 
 	string key_GameModel = "game_model";
+	string key_HighScore = "game_highScore";
 
 	public void setGamePlayModel(int model)
 	{
 		PlayerPrefs.SetInt(key_GameModel,model);
+	}
+
+	public void SetHighestScore(int score)
+	{
+		PlayerPrefs.SetInt(key_HighScore,score);
 	}
 
 	public bool isPlayModelSingle()
@@ -21,5 +27,10 @@ public class PlayerPrefHandler{
 		}
 
 		return false;
+	}
+
+	public int GetHighestScore()
+	{
+		return PlayerPrefs.GetInt(key_HighScore);
 	}
 }

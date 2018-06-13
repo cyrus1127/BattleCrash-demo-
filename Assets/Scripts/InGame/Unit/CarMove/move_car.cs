@@ -8,6 +8,7 @@ public class move_car : MonoBehaviour {
 
 	bool isPlayerRegistered = false;
 	bool isSideTheWall = false;
+	bool isGameEnded = false;
 
 	public float maxSpeed = 0;
 	public float speedUpDurations_sec = 5;
@@ -18,6 +19,7 @@ public class move_car : MonoBehaviour {
 
 	RotateUpdateHelper myRotateUpdate;
 	public SimpleTouchController leftController;
+	bool isleftControllerNotStill = false;
 	AngleUnit myAngle;
 	AngleUnit angleChecker;
 
@@ -66,12 +68,8 @@ public class move_car : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if(myRig != null)
+		if(myRig != null && !isGameEnded)
 		{
-			myRig.AddRelativeForce(Vector3.forward * moveSpeed);
-
-			speedUp(Time.deltaTime);
-
 			if(myRotateUpdate != null)
 			{
 				myRotateUpdate.Update();
@@ -80,6 +78,13 @@ public class move_car : MonoBehaviour {
 					RotatePlayerByController();
 				}
 			}
+
+			speedUp(Time.deltaTime);
+			//update visual
+			powerBar.UpdateBarProcess( (moveSpeed/maxSpeed) * 100F);
+			//update my speed
+			myRig.AddRelativeForce(Vector3.forward * moveSpeed);
+
 		}
 	}
 
@@ -89,23 +94,36 @@ public class move_car : MonoBehaviour {
 		{
 			onHit_speedRecoverDelay -= deltaTime;
 		}else{
-
-			//check controller is in controlling
-			powerBar
-
-			if( maxSpeed > 0 && moveSpeed < maxSpeed)
+			
+			if(isleftControllerNotStill)
 			{
-				float speed_to_add = (((deltaTime * 1000) * (maxSpeed/(speedUpDurations_sec*1000))) /1000);
-				speed_to_add = 1;
-				if(moveSpeed < maxSpeed/3)
-					speed_to_add = 10;
-				if(moveSpeed + speed_to_add > maxSpeed)
+				if( maxSpeed > 0 && moveSpeed < maxSpeed)
 				{
-					moveSpeed = maxSpeed;
-				}else{
-					moveSpeed += speed_to_add;	
+//					float speed_to_add;// = (((deltaTime * 1000) * (maxSpeed/(speedUpDurations_sec*1000))) /1000);
+//					speed_to_add = (maxSpeed /100F) * 5F;
+					if(moveSpeed < maxSpeed/3F){
+						if(moveSpeed == 0){
+							moveSpeed = (maxSpeed /100F) * 5F;
+						}else{
+							moveSpeed = moveSpeed * 1.05F;
+						}
+					}else{
+						moveSpeed = moveSpeed * 1.2F;
+					}
+
+					if(moveSpeed > maxSpeed)
+					{
+						moveSpeed = maxSpeed;
+					}
+				}	
+			}else{
+				if( moveSpeed > 0 )
+				{
+					moveSpeed = moveSpeed * 0.5F;
+					if(moveSpeed <= 0)
+						moveSpeed = 0;
 				}
-			}	
+			}
 		}
 	}
 
@@ -142,8 +160,15 @@ public class move_car : MonoBehaviour {
 		}
 
 		if(!isFaceToTarget){
-			moveSpeed = 0;
-			myRig.AddExplosionForce(250, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);	
+//			moveSpeed = 0;
+			myRig.AddExplosionForce(250F, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);	
+		}else{
+			move_car_NPC npc_target = collisionInfo.transform.GetComponent<move_car_NPC>();
+			if(npc_target != null)
+			{
+				moveSpeed = moveSpeed * 0.5F;
+				npc_target.moveBackBy(transform, maxSpeed/100 * powerBar.CurrentSpeed());
+			}
 		}
 	}
 
@@ -153,6 +178,16 @@ public class move_car : MonoBehaviour {
 	{
 		myAngle.SetOopAdj( Vector3.zero , new Vector3(leftController.GetTouchPosition.x,0,leftController.GetTouchPosition.y) );
 
+		//check user one controll and want to let it move
+		float dete = 0F;
+		if((leftController.GetTouchPosition.x > dete || leftController.GetTouchPosition.x < -dete) || (leftController.GetTouchPosition.y > dete || leftController.GetTouchPosition.y < -dete))
+		{
+			isleftControllerNotStill = true;
+		}else{
+			isleftControllerNotStill = false;
+		}
+
+		//check the angle and update it
 		if(leftController.GetTouchPosition.x != 0 && myRotateUpdate != null)
 		{
 			float angle =  myAngle.getTranslatedCompleteAngle(myAngle.getCurrentDirection(), myAngle.getCurrentAngle());
@@ -177,6 +212,7 @@ public class move_car : MonoBehaviour {
 				gameLogic.isUserRegistered();	
 
 				//off the 
+				isPlayerRegistered = true;
 			}	
 		}else{
 
@@ -210,10 +246,20 @@ public class move_car : MonoBehaviour {
 
 			if(collisionInfo.gameObject.tag == "Unit")
 			{
-				//			moveBack(collisionInfo);
+				if(powerBar.CurrentSpeed() >= 50F)
+				{
+					//Do weapon show
+					foreach(WeaponController wc in weaponHolder)
+					{
+						wc.isLoop = false;
+						wc.Action_attack_rotate((360F * 5), 1.3F);
+					}
+						
+					moveBack(collisionInfo);
 
-				//Do weapon show
-
+//					//stop the movement
+//					moveSpeed = 0F;
+				}
 			}
 
 		}
@@ -242,6 +288,12 @@ public class move_car : MonoBehaviour {
 				gameLogic.UserOutSideTheBoard();
 			}	
 		}
+	}
+
+	public void StopMove()
+	{
+		moveSpeed = 0;
+		isGameEnded = true;
 	}
 
 }

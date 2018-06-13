@@ -18,6 +18,8 @@ public class InGameLogic : MonoBehaviour {
 
 	//Canvas
 	public SimpleTouchController loaclPlayer_controller;
+	public Text txt_score;
+	public Text txt_score_end;
 	public GameObject panel_gameEnd;
 	public GameObject panel_Loading;
 	public Text debugLogBoard;
@@ -36,6 +38,9 @@ public class InGameLogic : MonoBehaviour {
 	float cpuGeneTimeCount = 0;
 	public GameObject cpuPrefab;
 	public GameObject userPrefab;
+	int cur_score = 0;
+	int best_score = 0;
+
 
 
 	// Use this for initialization
@@ -141,6 +146,11 @@ public class InGameLogic : MonoBehaviour {
 	//Game cycle
 	public void Reset()
 	{
+		best_score = userDefault.GetHighestScore();
+		cur_score = 0;
+		txt_score.gameObject.SetActive(true);
+		UpdateRecord();
+
 		{//init
 			GameObject[] onBoardUnit = GameObject.FindGameObjectsWithTag("Unit");
 			if(onBoardUnit.Length > 0)
@@ -179,6 +189,23 @@ public class InGameLogic : MonoBehaviour {
 
 	void EndGame(){
 		panel_gameEnd.SetActive(true);
+
+		foreach(GameObject unit in GameObject.FindGameObjectsWithTag("Unit"))
+		{
+			if(unit.GetComponent<move_car>() != null)
+			{
+				unit.GetComponent<move_car>().StopMove();
+			}else{
+				unit.GetComponent<move_car_NPC>().StopMove();
+			}
+		}
+
+		if(best_score < cur_score)
+		{
+			userDefault.SetHighestScore(cur_score);	
+		}
+
+		txt_score.gameObject.SetActive(false);
 	}
 
 	public void ExitToMenu(){
@@ -201,5 +228,17 @@ public class InGameLogic : MonoBehaviour {
 	{
 		Debug.Log("isUserRegistered --> change state to readyDone");
 		curGameState = GameState.readyDone;
+	}
+
+	public void NPCDestoried()
+	{
+		cur_score += 100;	
+		UpdateRecord();
+	}
+
+	public void UpdateRecord()
+	{
+		txt_score.text = string.Format("Score : {0}   Highest Score : {1}", cur_score, best_score);
+		txt_score_end.text = string.Format("Score : {0}\nHighest Score : {1}", cur_score, best_score);
 	}
 }
