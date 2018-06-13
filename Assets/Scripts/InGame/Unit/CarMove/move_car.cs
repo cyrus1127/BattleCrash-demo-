@@ -6,6 +6,9 @@ public class move_car : MonoBehaviour {
 
 	Rigidbody myRig;
 
+	bool isPlayerRegistered = false;
+	bool isSideTheWall = false;
+
 	public float maxSpeed = 0;
 	public float speedUpDurations_sec = 5;
 	public float moveSpeed = 0;
@@ -18,7 +21,24 @@ public class move_car : MonoBehaviour {
 	AngleUnit myAngle;
 	AngleUnit angleChecker;
 
+	public AttachBarHandler barHander;
+	public WeaponController[] weaponHolder;
+
+	powerBarController powerBar;
+
 	// Use this for initialization
+	void Awake(){
+		if(leftController == null)
+		{
+			leftController = GameObject.Find("SimpleTouch Joystick").GetComponent<SimpleTouchController>();
+		}
+
+		if(powerBar == null)
+		{
+			powerBar = GameObject.Find("PowerBar").GetComponent<powerBarController>();
+		}
+	}
+
 	void Start () {
 		if(myRig == null)
 		{
@@ -30,6 +50,17 @@ public class move_car : MonoBehaviour {
 			myAngle = new AngleUnit();
 			angleChecker = new AngleUnit();
 			angleChecker.myObject = gameObject;
+
+			if(gameObject.transform.GetChild(1).name == "Unit_body")
+			{
+				Transform body = gameObject.transform.GetChild(1);
+
+				barHander = body.GetComponentInChildren<AttachBarHandler>();
+				weaponHolder = body.GetComponentsInChildren<WeaponController>();	
+			}else{
+				Debug.Log("Unit_body not found");
+			}
+
 		}
 	}
 	
@@ -58,6 +89,10 @@ public class move_car : MonoBehaviour {
 		{
 			onHit_speedRecoverDelay -= deltaTime;
 		}else{
+
+			//check controller is in controlling
+			powerBar
+
 			if( maxSpeed > 0 && moveSpeed < maxSpeed)
 			{
 				float speed_to_add = (((deltaTime * 1000) * (maxSpeed/(speedUpDurations_sec*1000))) /1000);
@@ -74,44 +109,7 @@ public class move_car : MonoBehaviour {
 		}
 	}
 
-	void OnCollisionStay(Collision collisionInfo)
-	{
-		if(collisionInfo.gameObject.tag == "wall")
-		{
-			if(moveSpeed > 0)
-			{
-				bool isFaceToTarget = false;
-				int layerMask = 1 << 8;
-				layerMask = ~layerMask;
-				RaycastHit hit;
-				// Does the ray intersect any objects excluding the player layer
-				if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, layerMask))
-				{
-					Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
-					Debug.Log("Did Hit");
-					isFaceToTarget = true;
-				}
 
-				Debug.Log("on hit wall");
-				if(isFaceToTarget)
-				{
-					moveSpeed = 0;	
-//					if(onHit_speedRecoverDelay <= 0)
-//					{
-//						onHit_speedRecoverDelay = 1;	
-//					}
-				}
-			}
-		}
-
-		if(collisionInfo.gameObject.tag == "Unit")
-		{
-//			moveBack(collisionInfo);
-
-			//Do weapon show
-
-		}
-	}
 
 	void moveBack( Collision collisionInfo ){
 
@@ -164,6 +162,86 @@ public class move_car : MonoBehaviour {
 			myRotateUpdate.setIsPressedKeyDetected(false);
 		}
 
+	}
+
+
+	// Collision handling
+	void OnCollisionStay(Collision collisionInfo)
+	{
+		if(!isPlayerRegistered)
+		{
+			if(collisionInfo.gameObject.tag == "board")
+			{
+				GameObject main = GameObject.Find("MainScript");
+				InGameLogic gameLogic = main.GetComponent<InGameLogic>();
+				gameLogic.isUserRegistered();	
+
+				//off the 
+			}	
+		}else{
+
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+				if(moveSpeed > 0)
+				{
+					bool isFaceToTarget = false;
+					int layerMask = 1 << 8;
+					layerMask = ~layerMask;
+					RaycastHit hit;
+					// Does the ray intersect any objects excluding the player layer
+					if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out hit, Mathf.Infinity, layerMask))
+					{
+						Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * hit.distance, Color.yellow);
+						Debug.Log("Did Hit");
+						isFaceToTarget = true;
+					}
+
+					Debug.Log("on hit wall");
+					if(isFaceToTarget)
+					{
+						moveSpeed = 0;	
+						//					if(onHit_speedRecoverDelay <= 0)
+						//					{
+						//						onHit_speedRecoverDelay = 1;	
+						//					}
+					}
+				}
+			}
+
+			if(collisionInfo.gameObject.tag == "Unit")
+			{
+				//			moveBack(collisionInfo);
+
+				//Do weapon show
+
+			}
+
+		}
+	}
+
+	void OnTriggerStay(Collider collisionInfo)
+	{
+		if(!isSideTheWall)
+		{
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+				isSideTheWall = true;
+			}	
+		}
+
+	}
+
+	void OnTriggerExit(Collider collisionInfo)
+	{
+		if(isSideTheWall)
+		{
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+				GameObject main = GameObject.Find("MainScript");
+				InGameLogic gameLogic = main.GetComponent<InGameLogic>();
+				gameLogic.UserOutSideTheBoard();
+			}	
+		}
 	}
 
 }

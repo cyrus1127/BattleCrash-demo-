@@ -34,8 +34,8 @@ public class InGameLogic : MonoBehaviour {
 	GameState curGameState;
 	public float cpuGeneTimerDuration = 5;
 	float cpuGeneTimeCount = 0;
-	move_car_NPC cpuPreb;
-	move_car userPreb;
+	public GameObject cpuPrefab;
+	public GameObject userPrefab;
 
 
 	// Use this for initialization
@@ -78,6 +78,7 @@ public class InGameLogic : MonoBehaviour {
 					}
 
 					curGameState = GameState.ready;
+					Reset();
 				}else{
 					//let NetWorkManager to handle
 					//not support
@@ -92,7 +93,6 @@ public class InGameLogic : MonoBehaviour {
 		if(curGameState == GameState.readyDone)
 		{
 			StartGame();
-
 		}
 
 		if(curGameState == GameState.playing )
@@ -141,18 +141,40 @@ public class InGameLogic : MonoBehaviour {
 	//Game cycle
 	public void Reset()
 	{
+		{//init
+			GameObject[] onBoardUnit = GameObject.FindGameObjectsWithTag("Unit");
+			if(onBoardUnit.Length > 0)
+			{
+				Debug.Log("remove all unit");
+				foreach(GameObject obj in onBoardUnit)
+				{
+					GameObject.DestroyImmediate(obj);
+				}
+			}
+
+			//do new create Player
+			{
+				Debug.Log("plyaer gene pos : " + playerGenePoint.localPosition);
+				GameObject player = Instantiate(userPrefab, playerGenePoint.localPosition, Quaternion.identity);
+				player.name = "Player";
+			}
+		}
+
 		//hide GameEndPanel
 		curGameState = GameState.ready;
 		panel_gameEnd.SetActive(false);
 	}
 
 	void StartGame(){
+		Debug.Log("StartGame --> change state to playing");
 		curGameState = GameState.playing;
 	}
 
 	void doGeneCPU()
 	{
+		Debug.Log("Playing :: doGeneCPU");
 		Transform myGenePos = cpuGenePoint[Random.Range(0,cpuGenePoint.Count)];
+			Instantiate(cpuPrefab, myGenePos.localPosition, Quaternion.identity);
 	}
 
 	void EndGame(){
@@ -177,6 +199,7 @@ public class InGameLogic : MonoBehaviour {
 
 	public void isUserRegistered()
 	{
+		Debug.Log("isUserRegistered --> change state to readyDone");
 		curGameState = GameState.readyDone;
 	}
 }

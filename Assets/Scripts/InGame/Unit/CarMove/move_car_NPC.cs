@@ -6,6 +6,8 @@ public class move_car_NPC : MonoBehaviour {
 
 	Rigidbody myRig;
 
+	bool isSideTheWall = false;
+
 	public float maxSpeed = 0;
 	public float speedUpDurations_sec = 5;
 	public float moveSpeed = 0;
@@ -65,11 +67,15 @@ public class move_car_NPC : MonoBehaviour {
 		}
 	}
 
+	public void moveBackBy( Collision collisionInfo ){
+		moveSpeed = 0;
+		myRig.AddExplosionForce(1000, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);
+	}
+
 	void OnCollisionStay(Collision collisionInfo)
 	{
 		if(collisionInfo.gameObject.tag == "wall")
 		{
-
 			if(moveSpeed == 0)
 			{
 				
@@ -88,15 +94,29 @@ public class move_car_NPC : MonoBehaviour {
 			}
 		}
 
-		if(collisionInfo.gameObject.tag == targetTagName)
+	}
+
+	void OnTriggerStay(Collider collisionInfo)
+	{
+		if(!isSideTheWall)
 		{
-			moveBack(collisionInfo);
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+				isSideTheWall = true;
+			}	
+		}
+
+	}
+
+	void OnTriggerExit(Collider collisionInfo)
+	{
+		if(isSideTheWall)
+		{
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+
+				Destroy(gameObject);
+			}	
 		}
 	}
-
-	void moveBack( Collision collisionInfo ){
-		moveSpeed = 0;
-		myRig.AddExplosionForce(1000, collisionInfo.transform.localPosition , collisionInfo.transform.localScale.z * 2 , 0,ForceMode.Impulse);
-	}
-
 }
