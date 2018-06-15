@@ -7,6 +7,7 @@ public class move_car : MonoBehaviour {
 	Rigidbody myRig;
 
 	bool isPlayerRegistered = false;
+	bool isInsideTheBoard = false;
 	bool isSideTheWall = false;
 	bool isGameEnded = false;
 
@@ -108,7 +109,7 @@ public class move_car : MonoBehaviour {
 							moveSpeed = moveSpeed * 1.05F;
 						}
 					}else{
-						moveSpeed = moveSpeed * 1.2F;
+						moveSpeed = moveSpeed * 2.2F;
 					}
 
 					if(moveSpeed > maxSpeed)
@@ -119,9 +120,9 @@ public class move_car : MonoBehaviour {
 			}else{
 				if( moveSpeed > 0 )
 				{
-					moveSpeed = moveSpeed * 0.5F;
+					moveSpeed = moveSpeed * 0.99F;
 					if(moveSpeed <= 0)
-						moveSpeed = 0;
+						moveSpeed = (maxSpeed /100F) * 5F;
 				}
 			}
 		}
@@ -215,6 +216,13 @@ public class move_car : MonoBehaviour {
 				isPlayerRegistered = true;
 			}	
 		}else{
+
+			if(collisionInfo.gameObject.tag == "board")
+			{
+				isInsideTheBoard = true;
+			}else{
+				
+			}
 
 			if(collisionInfo.gameObject.tag == "wall")
 			{
