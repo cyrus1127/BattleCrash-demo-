@@ -50,14 +50,14 @@ public class InGameLogic : MonoBehaviour {
 
 
 			{//read CSV files
-				{//stage
-					Common.getChessDetails();
-				}
-					
-				{//prepare chesses
-					Common.getSelectedTeam();
-					Common.getCurrentStage();
-				}
+//				{//stage
+//					Common.getChessDetails();
+//				}
+//					
+//				{//prepare chesses
+//					Common.getSelectedTeam();
+//					Common.getCurrentStage();
+//				}
 			}
 
 			{
