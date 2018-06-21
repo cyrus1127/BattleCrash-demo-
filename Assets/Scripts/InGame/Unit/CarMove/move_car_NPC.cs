@@ -6,7 +6,9 @@ public class move_car_NPC : MonoBehaviour {
 
 	Rigidbody myRig;
 
+	bool isPlayerRegistered = false;
 	bool isSideTheWall = false;
+	bool isInsideTheBoard = false;
 	bool isGameEnded = false;
 
 	public float maxSpeed = 0;
@@ -84,26 +86,43 @@ public class move_car_NPC : MonoBehaviour {
 
 	void OnCollisionStay(Collision collisionInfo)
 	{
-		if(collisionInfo.gameObject.tag == "wall")
+		if(!isPlayerRegistered)
 		{
-			if(moveSpeed == 0)
+			if(collisionInfo.gameObject.tag == "board")
 			{
-				
-			}else{
-				Debug.Log("on hit wall");
+				//off the 
+				isPlayerRegistered = true;
+				isInsideTheBoard = true;
+			}	
+		}else{
 
-//				moveSpeed -= onHitDrag_wall;
+			if(collisionInfo.gameObject.tag == "wall")
+			{
+				if(moveSpeed == 0)
 				{
-					moveSpeed = maxSpeed * 0.25F;
-				}
 
-				if(onHit_speedRecoverDelay <= 0)
-				{
-					onHit_speedRecoverDelay = 1;	
+				}else{
+					Debug.Log("on hit wall");
+
+					//				moveSpeed -= onHitDrag_wall;
+					{
+						moveSpeed = maxSpeed * 0.25F;
+					}
+
+					if(onHit_speedRecoverDelay <= 0)
+					{
+						onHit_speedRecoverDelay = 1;	
+					}
 				}
 			}
 		}
+	}
 
+	void OnCollisionExit(Collision collisionInfo) {
+		if(collisionInfo.gameObject.tag == "board")
+		{
+			isInsideTheBoard = false;
+		}
 	}
 
 	void OnTriggerStay(Collider collisionInfo)
@@ -120,7 +139,7 @@ public class move_car_NPC : MonoBehaviour {
 
 	void OnTriggerExit(Collider collisionInfo)
 	{
-		if(isSideTheWall)
+		if(isSideTheWall && !isInsideTheBoard)
 		{
 			if(collisionInfo.gameObject.tag == "wall")
 			{

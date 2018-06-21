@@ -214,16 +214,9 @@ public class move_car : MonoBehaviour {
 
 				//off the 
 				isPlayerRegistered = true;
+				isInsideTheBoard = true;
 			}	
 		}else{
-
-			if(collisionInfo.gameObject.tag == "board")
-			{
-				isInsideTheBoard = true;
-			}else{
-				
-			}
-
 			if(collisionInfo.gameObject.tag == "wall")
 			{
 				if(moveSpeed > 0)
@@ -273,6 +266,13 @@ public class move_car : MonoBehaviour {
 		}
 	}
 
+	void OnCollisionExit(Collision collisionInfo) {
+		if(collisionInfo.gameObject.tag == "board")
+		{
+			isInsideTheBoard = false;
+		}
+	}
+
 	void OnTriggerStay(Collider collisionInfo)
 	{
 		if(!isSideTheWall)
@@ -287,7 +287,7 @@ public class move_car : MonoBehaviour {
 
 	void OnTriggerExit(Collider collisionInfo)
 	{
-		if(isSideTheWall)
+		if(isSideTheWall && !isInsideTheBoard)
 		{
 			if(collisionInfo.gameObject.tag == "wall")
 			{
